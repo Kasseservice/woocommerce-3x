@@ -1,7 +1,7 @@
 <?php
 defined('ABSPATH') or die('No script kiddies please!');
 /*
-  Plugin Name: Duell Woocommerce Integration
+  Plugin Name: Duell Integration
   Plugin URI: https://kasseservice.no/
   Description: Plugin used to sync orders, products, customer with Duell POS
   Author: kasseservice
@@ -25,6 +25,8 @@ class Duellintegration {
 
         //admin scripts and styles
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts_and_styles'));
+        add_action('admin_notices', array($this, 'update_notice'));
+        add_action('admin_notices', array($this, 'error_notice'));
     }
 
     /*
@@ -58,11 +60,11 @@ class Duellintegration {
         $wpdb->query("DROP TABLE IF EXISTS $table");
 
         // for site options in Multisite
-        unregister_setting('duellintegration', 'duellintegration_client_number');
-        unregister_setting('duellintegration', 'duellintegration_client_token');
-        unregister_setting('duellintegration', 'duellintegration_stock_department_token');
-        unregister_setting('duellintegration', 'duellintegration_order_department_token');
-        unregister_setting('duellintegration', 'duellintegration_api_access_token');
+        delete_option('duellintegration_client_number');
+        delete_option('duellintegration_client_token');
+        delete_option('duellintegration_stock_department_token');
+        delete_option('duellintegration_order_department_token');
+        delete_option('duellintegration_api_access_token');
     }
 
     function create_plugin_settings_page() {
@@ -107,22 +109,27 @@ class Duellintegration {
         add_submenu_page($slug, $log_page_title, $log_menu_title, $capability, $log_slug, $log_callback);
     }
 
+    public function update_notice() {
+
+        // add error/update messages
+        // check if the user have submitted the settings
+        // wordpress will add the "settings-updated" $_GET parameter to the url
+        if (isset($_GET['settings-updated'])) {
+            // add settings saved message with the class of "updated"
+            add_settings_error('duellintegration_messages', 'duellintegration_message', __('Settings Saved', 'duellintegration'), 'updated');
+        }
+    }
+
+    public function error_notice() {
+        // show error/update messages
+        settings_errors('duellintegration_messages');
+    }
+
     public function plugin_settings_page_content() {
 
         // check user capabilities
         if (!current_user_can('manage_options')) {
             return;
-        }
-
-        // add error/update messages
-        // check if the user have submitted the settings
-        // wordpress will add the "settings-updated" $_GET parameter to the url
-        // show error/update messages
-        settings_errors('duellintegration_messages');
-
-        if (isset($_GET['settings-updated'])) {
-            // add settings saved message with the class of "updated"
-            add_settings_error('duellintegration_messages', 'duellintegration_message', __('Settings Saved', 'duellintegration'), 'updated');
         }
         ?>
 
@@ -320,7 +327,7 @@ class Duellintegration {
 
 
         if (is_null($input) || $input == '' || !is_numeric($input) || strlen($input) != 6) {
-
+            $input = get_option('duellintegration_client_number');
             add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in client number!', 'error');
         }
 
@@ -331,7 +338,7 @@ class Duellintegration {
 
 
         if (is_null($input) || $input == '') {
-
+            $input = get_option('duellintegration_client_token');
             add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in client token!', 'error');
         }
 
@@ -342,7 +349,7 @@ class Duellintegration {
 
 
         if (is_null($input) || $input == '') {
-
+            $input = get_option('duellintegration_stock_department_token');
             add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in stock department token!', 'error');
         }
 
@@ -353,7 +360,7 @@ class Duellintegration {
 
 
         if (is_null($input) || $input == '') {
-
+            $input = get_option('duellintegration_order_department_token');
             add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in order department token!', 'error');
         }
 
