@@ -18,6 +18,7 @@ class Duellintegration {
 
         add_action('plugins_loaded', array($this, 'plugin_init_setup'));
 
+
         // Hook into the admin menu
         add_action('admin_menu', array($this, 'create_plugin_settings_page'));
 
@@ -25,8 +26,7 @@ class Duellintegration {
         add_action('admin_init', array($this, 'setup_sections'));
         add_action('admin_init', array($this, 'setup_fields'));
 
-        //admin scripts and styles
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts_and_styles'));
+
         add_action('admin_notices', array($this, 'update_notice'));
         add_action('admin_notices', array($this, 'error_notice'));
 
@@ -36,6 +36,30 @@ class Duellintegration {
         add_action('duell_cron_sync_prices', array($this, 'sync_prices'));
         add_action('duell_cron_sync_stocks', array($this, 'sync_stocks'));
         add_action('duell_cron_sync_orders', array($this, 'sync_orders'));
+
+        //admin scripts and styles
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts_and_styles'));
+        add_action('admin_footer', array($this, 'setup_action_javascript'));
+        add_action('wp_ajax_manual_run_cron_action', array($this, 'manual_run_custom_cron'));
+    }
+
+    function manual_run_custom_cron() {
+
+        $reponse = array();
+        if (!empty($_POST['param'])) {
+
+            $cronName = strtolower($_POST['param']);
+            do_action('duell_cron_' . $cronName);
+            $response['response'] = "Added in background " . $cronName;
+        } else {
+            $response['response'] = "You didn't send the param";
+        }
+
+
+        header("Content-Type: application/json");
+        echo json_encode($response);
+
+        exit();
     }
 
     function plugin_init_setup() {
@@ -250,19 +274,22 @@ class Duellintegration {
 
           <div class="col-right borderL">
 
+            <div id="manual-cron-output" style="margin: 8px 0px;"></div>
+
             <div class="col-right-hf">
 
 
               <div class="infodiv">
                 <h3><?php echo __('Sync Products', 'duellintegration') ?></h3>
                 <p><?php echo __('Manual sync products with Duell', 'duellintegration') ?></p>
-                <a href="javascript:void(0)" class="syncbutton"><?php echo __('Do Now', 'duellintegration') ?></a>
+                <a href="javascript:void(0)" data-type="sync_products"  class="syncbutton manual-cron"><?php echo __('Run now', 'duellintegration') ?></a>
+
               </div>
 
               <div class="infodiv">
                 <h3><?php echo __('Sync Stocks', 'duellintegration') ?></h3>
                 <p><?php echo __('Manual sync stocks with Duell', 'duellintegration') ?></p>
-                <a href="javascript:void(0)" class="syncbutton"><?php echo __('Do Now', 'duellintegration') ?></a>
+                <a href="javascript:void(0)" data-type="sync_stocks" class="syncbutton manual-cron"><?php echo __('Run now', 'duellintegration') ?></a>
               </div>
 
             </div>
@@ -272,13 +299,13 @@ class Duellintegration {
               <div class="infodiv">
                 <h3><?php echo __('Sync Price', 'duellintegration') ?></h3>
                 <p><?php echo __('Manual sync price with Duell', 'duellintegration') ?></p>
-                <a href="javascript:void(0)" class="syncbutton"><?php echo __('Do Now', 'duellintegration') ?></a>
+                <a href="javascript:void(0)" data-type="sync_prices" class="syncbutton manual-cron"><?php echo __('Run now', 'duellintegration') ?></a>
               </div>
 
               <div class="infodiv">
                 <h3><?php echo __('Sync Orders', 'duellintegration') ?></h3>
                 <p><?php echo __('Manual sync orders with Duell', 'duellintegration') ?></p>
-                <a href="javascript:void(0)" class="syncbutton"><?php echo __('Do Now', 'duellintegration') ?></a>
+                <a href="javascript:void(0)" data-type="sync_orders" class="syncbutton manual-cron"><?php echo __('Run now', 'duellintegration') ?></a>
               </div>
 
             </div>
@@ -298,6 +325,37 @@ class Duellintegration {
 
 
         </div>
+        <?php
+    }
+
+    public function setup_action_javascript() {
+        ?><script>
+
+                    (function ($) {
+                      var $output = $('#manual-cron-output');
+
+
+                      $('.manual-cron').click(function () {
+
+                        console.log($(this).attr('data-type'))
+                        jQuery.ajax({
+                          type: "POST",
+                          url: ajaxurl,
+                          data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
+                          success: function (data) {
+                            $output.html(data.response);
+                          },
+                          error: function (jqXHR, textStatus, errorThrown) {
+                            $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
+                          }
+                        }).done(function (msg) {
+                          // alert("Data Saved: " + msg.response);
+                          $output.html('<code>OK</code>' + msg.response);
+                        });
+
+                      });
+                    }(jQuery));
+        </script>
         <?php
     }
 
@@ -491,7 +549,19 @@ class Duellintegration {
     }
 
     public function enqueue_admin_scripts_and_styles() {
+
+        $doing_wp_cron = sprintf('%.22F', microtime(true));
+        $url = add_query_arg('doing_wp_cron', $doing_wp_cron, site_url('wp-cron.php'));
+        $timeout = apply_filters('manual-cron-timeout', 20000);
+        $script_vars = array(
+            'url' => $url,
+            'timeout' => $timeout,
+        );
+
         wp_enqueue_style('duellintegration_admin', plugin_dir_url(__FILE__) . '/assets/css/duellintegration.css');
+
+        //wp_enqueue_script('duellintegration_admin', plugin_dir_url(__FILE__) . '/assets/js/duellintegration.js');
+        //wp_localize_script('duellintegration_admin', 'DUELLMANUALCRON', $script_vars);
     }
 
 }
