@@ -3,7 +3,7 @@ defined('ABSPATH') or die('No script kiddies please!');
 /*
   Plugin Name: Duell Integration
   Plugin URI: https://kasseservice.no/
-  Description: Plugin used to sync orders, products, customer with Duell POS
+  Description: Duell integration used to sync orders, products, customer with Duell.
   Author: kasseservice
   Version: 1.0
   Author URI: https://kasseservice.no/
@@ -16,6 +16,8 @@ class Duellintegration {
         register_activation_hook(__FILE__, array($this, 'setup_install'));
         register_deactivation_hook(__FILE__, array($this, 'setup_uninstall'));
 
+        add_action('plugins_loaded', array($this, 'plugin_init_setup'));
+
         // Hook into the admin menu
         add_action('admin_menu', array($this, 'create_plugin_settings_page'));
 
@@ -27,6 +29,44 @@ class Duellintegration {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts_and_styles'));
         add_action('admin_notices', array($this, 'update_notice'));
         add_action('admin_notices', array($this, 'error_notice'));
+
+
+        add_filter('cron_schedules', array($this, 'cron_intervals_schedule'));
+        add_action('duell_cron_sync_products', array($this, 'sync_products'));
+        add_action('duell_cron_sync_prices', array($this, 'sync_prices'));
+        add_action('duell_cron_sync_stocks', array($this, 'sync_stocks'));
+        add_action('duell_cron_sync_orders', array($this, 'sync_orders'));
+    }
+
+    function plugin_init_setup() {
+        $this->check_plugin_dependencies();
+    }
+
+    /**
+     * Check dependencies.
+     *
+     * @throws Exception
+     */
+    function check_plugin_dependencies() {
+        if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
+            add_action('admin_notices', array($this, 'wc_dependency_warning_notice'));
+            return false;
+        }
+
+        if (!function_exists('curl_init')) {
+            add_action('admin_notices', array($this, 'curl_dependency_warning_notice'));
+            return false;
+        }
+
+        return true;
+    }
+
+    function wc_dependency_warning_notice() {
+        echo '<div class="error"><p><strong>' . sprintf(esc_html__('Duell integration requires WooCommerce to be installed and active. You can download %s here.', 'duellintegration'), '<a href="https://woocommerce.com/" target="_blank">WooCommerce</a>') . '</strong></p></div>';
+    }
+
+    function curl_dependency_warning_notice() {
+        echo '<div class="error"><p><strong>' . sprintf(esc_html__('Duell integration requires cURL to be installed on your server', 'duellintegration')) . '</strong></p></div>';
     }
 
     /*
@@ -34,6 +74,7 @@ class Duellintegration {
      */
 
     function setup_install() {
+
         global $wpdb;
         $table = $wpdb->prefix . "duell_sync_logs";
         $structure = "CREATE TABLE IF NOT EXISTS $table (
@@ -45,6 +86,40 @@ class Duellintegration {
         PRIMARY KEY (id)
         );";
         $wpdb->query($structure);
+
+        if (!wp_next_scheduled('duell_cron_sync_products')) {
+            wp_schedule_event(time(), 'every3hours', 'duell_cron_sync_products');
+        }
+
+        if (!wp_next_scheduled('duell_cron_sync_prices')) {
+            wp_schedule_event(time(), 'every30minutes', 'duell_cron_sync_prices');
+        }
+        if (!wp_next_scheduled('duell_cron_sync_stocks')) {
+            wp_schedule_event(time(), 'every30minutes', 'duell_cron_sync_stocks');
+        }
+
+        if (!wp_next_scheduled('duell_cron_sync_orders')) {
+            //$next3am = ( date('Hi') >= '0300' ) ? strtotime('+1day 3am') : strtotime('3am');
+            //wp_schedule_single_event($next3am, 'duell_cron_sync_orders');
+            wp_schedule_event(strtotime('03:00:00'), 'daily3am', 'duell_cron_sync_orders');
+        }
+    }
+
+    function cron_intervals_schedule($schedules) {
+        $schedules['every3hours'] = array(
+            'interval' => 10800,
+            'display' => __('Every 3 hours')
+        );
+        $schedules['every30minutes'] = array(
+            'interval' => 1800,
+            'display' => __('Every 30 Minutes')
+        );
+        $schedules['daily3am'] = array(
+            'interval' => 86400,
+            'display' => __('Every day 3am')
+        );
+
+        return $schedules;
     }
 
     /*
@@ -53,18 +128,42 @@ class Duellintegration {
 
     function setup_uninstall() {
         global $wpdb;
+
+//deactivate cron jobs
+        wp_clear_scheduled_hook('duell_cron_sync_products');
+        wp_clear_scheduled_hook('duell_cron_sync_prices');
+        wp_clear_scheduled_hook('duell_cron_sync_stocks');
+        wp_clear_scheduled_hook('duell_cron_sync_orders');
+
+
         $table = $wpdb->prefix . "duell_sync_logs";
 
-
-        // drop a table
+// drop a table
         $wpdb->query("DROP TABLE IF EXISTS $table");
 
-        // for site options in Multisite
+// for site options in Multisite
         delete_option('duellintegration_client_number');
         delete_option('duellintegration_client_token');
         delete_option('duellintegration_stock_department_token');
         delete_option('duellintegration_order_department_token');
         delete_option('duellintegration_api_access_token');
+        delete_option('duellintegration_log_status');
+    }
+
+    public function sync_products() {
+        update_option('duellintegration_client_number', date('Y-m-d H:i:s'));
+    }
+
+    public function sync_prices() {
+        update_option('duellintegration_client_token', date('Y-m-d H:i:s'));
+    }
+
+    public function sync_stocks() {
+        update_option('duellintegration_stock_department_token', date('Y-m-d H:i:s'));
+    }
+
+    public function sync_orders() {
+        update_option('duellintegration_order_department_token', date('Y-m-d H:i:s'));
     }
 
     function create_plugin_settings_page() {
@@ -80,7 +179,7 @@ class Duellintegration {
 
         $capability = 'manage_options';
 
-        // Add the menu item and page
+// Add the menu item and page
         $page_title = 'Duell Integration Settings';
         $menu_title = 'Duell Integration';
         $slug = 'duell-settings';
@@ -111,9 +210,9 @@ class Duellintegration {
 
     public function update_notice() {
 
-        // add error/update messages
-        // check if the user have submitted the settings
-        // wordpress will add the "settings-updated" $_GET parameter to the url
+// add error/update messages
+// check if the user have submitted the settings
+// wordpress will add the "settings-updated" $_GET parameter to the url
         if (isset($_GET['settings-updated'])) {
             // add settings saved message with the class of "updated"
             add_settings_error('duellintegration_messages', 'duellintegration_message', __('Settings Saved', 'duellintegration'), 'updated');
@@ -121,13 +220,13 @@ class Duellintegration {
     }
 
     public function error_notice() {
-        // show error/update messages
+// show error/update messages
         settings_errors('duellintegration_messages');
     }
 
     public function plugin_settings_page_content() {
 
-        // check user capabilities
+// check user capabilities
         if (!current_user_can('manage_options')) {
             return;
         }
@@ -188,10 +287,10 @@ class Duellintegration {
 
             <div class="infodiv txtL">
               <h3>Setup Cronjobs</h3>
-              <div><b>Product Sync every 3 hours:</b>  0 */3 * * * /usr/bin/curl  http://[yourwebshop.com]/duell/cron/product >/dev/null 2>&1</div>
-              <div><b>Price Sync every 30 minutes: </b> */3 * * * * /usr/bin/curl  http://[yourwebshop.com]/duell/cron/prices >/dev/null 2>&1</div>
-              <div><b>Stocks Sync every 30 minutes: </b> */3 * * * * /usr/bin/curl  http://[yourwebshop.com]/duell/cron/stocks >/dev/null 2>&1</div>
-              <div><b>Orders Sync every night 3am: </b> 0 3 * * * /usr/bin/curl  http://[yourwebshop.com]/duell/cron/orders >/dev/null 2>&1</div>
+              <div><b>Product Sync every 3 hours:</b>  0 */3 * * * curl  <?php echo get_site_url(); ?>/wp-cron.php?doing_wp_cron >/dev/null 2>&1</div>
+              <div><b>Price Sync every 30 minutes: </b> */30 * * * * curl  <?php echo get_site_url(); ?>/wp-cron.php?doing_wp_cron >/dev/null 2>&1</div>
+              <div><b>Stocks Sync every 30 minutes: </b> */30 * * * * curl  <?php echo get_site_url(); ?>/wp-cron.php?doing_wp_cron >/dev/null 2>&1</div>
+              <div><b>Orders Sync every night 3am: </b> 0 3 * * * curl  <?php echo get_site_url(); ?>/wp-cron.php?doing_wp_cron >/dev/null 2>&1</div>
             </div>
 
 
@@ -259,7 +358,21 @@ class Duellintegration {
                 'class' => "regular-text ltr",
                 'default' => '',
                 'helper' => ''
-            )
+            ),
+            array(
+                'uid' => 'duellintegration_log_status',
+                'label' => __('Enable Log', 'duellintegration'),
+                'section' => 'duell_configuration_section',
+                'type' => 'select',
+                'options' => array(
+                    '1' => 'Yes',
+                    '0' => 'No'
+                ),
+                'default' => 0,
+                'class' => "",
+                'helper' => '',
+                'supplimental' => ''
+            ),
         );
         foreach ($fields as $field) {
             add_settings_field($field['uid'], $field['label'], array($this, 'field_callback'), 'duellintegration', $field['section'], $field);
@@ -291,12 +404,18 @@ class Duellintegration {
                     $attributes = '';
                     $options_markup = '';
                     foreach ($arguments['options'] as $key => $label) {
-                        $options_markup .= sprintf('<option value="%s" %s>%s</option>', $key, selected($value[array_search($key, $value, true)], $key, false), $label);
+                        if ($arguments['type'] === 'multiselect') {
+                            $options_markup .= sprintf('<option value="%s" %s>%s</option>', $key, selected($value[array_search($key, $value, true)], $key, false), $label);
+                        } else {
+                            $options_markup .= sprintf('<option value="%s" %s>%s</option>', $key, selected($value, $key, false), $label);
+                        }
                     }
                     if ($arguments['type'] === 'multiselect') {
                         $attributes = ' multiple="multiple" ';
+                        printf('<select name="%1$s[]" id="%1$s" %2$s class="%4$s">%3$s</select>', $arguments['uid'], $attributes, $options_markup, $arguments['class']);
+                    } else {
+                        printf('<select name="%1$s" id="%1$s" %2$s class="%4$s">%3$s</select>', $arguments['uid'], $attributes, $options_markup, $arguments['class']);
                     }
-                    printf('<select name="%1$s[]" id="%1$s" %2$s class="%4$s">%3$s</select>', $arguments['uid'], $attributes, $options_markup, $arguments['class']);
                 }
                 break;
             case 'radio':
@@ -320,6 +439,10 @@ class Duellintegration {
         if ($supplimental = $arguments['supplimental']) {
             printf('<p class="description">%s</p>', $supplimental);
         }
+    }
+
+    public function plugin_validate_duellintegration_log_status_option($input) {
+        return sanitize_text_field($input);
     }
 
     function plugin_validate_duellintegration_client_number_option($input) {
@@ -373,6 +496,4 @@ class Duellintegration {
 
 }
 
-if (is_admin()) {
-    new Duellintegration();
-}
+new Duellintegration();
