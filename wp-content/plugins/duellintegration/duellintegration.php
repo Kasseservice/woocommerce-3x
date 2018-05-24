@@ -9,14 +9,19 @@ defined('ABSPATH') or die('No script kiddies please!');
   Author URI: https://kasseservice.no/
  */
 
+
+include( plugin_dir_path(__FILE__) . 'includes/duell.php');
+
 class Duellintegration {
 
     public function __construct() {
+
 
         register_activation_hook(__FILE__, array($this, 'setup_install'));
         register_deactivation_hook(__FILE__, array($this, 'setup_uninstall'));
 
         add_action('plugins_loaded', array($this, 'plugin_init_setup'));
+
 
 
         // Hook into the admin menu
@@ -41,6 +46,21 @@ class Duellintegration {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts_and_styles'));
         add_action('admin_footer', array($this, 'setup_action_javascript'));
         add_action('wp_ajax_manual_run_cron_action', array($this, 'manual_run_custom_cron'));
+
+        add_action('woocommerce_thankyou', array($this, 'wc_subtract_stock_after_order_placed'), 111, 1);
+        add_action('woocommerce_process_shop_order_meta', array($this, 'wc_subtract_stock_after_order_placed'), 10, 2);
+    }
+
+    function wc_subtract_stock_after_order_placed($order_id) {
+
+        if (!$order_id) {
+            return;
+        }
+
+        $order_detail = getOrderDetailById($order_id); //to get the detail of order ID #101
+        //print_r($order_detail);
+        write_log($order_detail);
+        die;
     }
 
     function manual_run_custom_cron() {
@@ -175,7 +195,7 @@ class Duellintegration {
     }
 
     public function sync_products() {
-        update_option('duellintegration_client_number', date('Y-m-d H:i:s'));
+        update_option('duellintegration_client_number', mt_rand(100000, 999999));
     }
 
     public function sync_prices() {
@@ -187,7 +207,8 @@ class Duellintegration {
     }
 
     public function sync_orders() {
-        update_option('duellintegration_order_department_token', date('Y-m-d H:i:s'));
+        $this->wc_subtract_stock_after_order_placed(16);
+        //update_option('duellintegration_order_department_token', date('Y-m-d H:i:s'));
     }
 
     function create_plugin_settings_page() {
