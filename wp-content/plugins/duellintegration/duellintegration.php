@@ -14,6 +14,8 @@ include( plugin_dir_path(__FILE__) . 'includes/duell.php');
 
 class Duellintegration {
 
+    public $duellLimit = 20;
+
     public function __construct() {
 
 
@@ -24,10 +26,10 @@ class Duellintegration {
 
 
 
-        // Hook into the admin menu
+// Hook into the admin menu
         add_action('admin_menu', array($this, 'create_plugin_settings_page'));
 
-        // Add Settings and Fields
+// Add Settings and Fields
         add_action('admin_init', array($this, 'setup_sections'));
         add_action('admin_init', array($this, 'setup_fields'));
 
@@ -42,13 +44,30 @@ class Duellintegration {
         add_action('duell_cron_sync_stocks', array($this, 'sync_stocks'));
         add_action('duell_cron_sync_orders', array($this, 'sync_orders'));
 
-        //admin scripts and styles
+        add_filter('duell_cron_sync_products', array($this, 'sync_products'));
+        add_filter('duell_cron_sync_prices', array($this, 'sync_prices'));
+        add_filter('duell_cron_sync_stocks', array($this, 'sync_stocks'));
+        add_filter('duell_cron_sync_orders', array($this, 'sync_orders'));
+
+//admin scripts and styles
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts_and_styles'));
         add_action('admin_footer', array($this, 'setup_action_javascript'));
         add_action('wp_ajax_manual_run_cron_action', array($this, 'manual_run_custom_cron'));
 
         add_action('woocommerce_thankyou', array($this, 'wc_subtract_stock_after_order_placed'), 111, 1);
         add_action('woocommerce_process_shop_order_meta', array($this, 'wc_subtract_stock_after_order_placed'), 10, 2);
+
+
+// For simple products add cost price:
+// Add Field
+//add_action('woocommerce_product_options_general_product_data', array($this, 'wc_add_product_cost_price_field'));
+//Save field
+//add_action('woocommerce_process_product_meta', array($this, 'wc_save_product_cost_price_field'), 10, 2);
+// For variations add cost price:
+// Add Field
+//add_action('woocommerce_product_after_variable_attributes', array($this, 'wc_add_variable_product_cost_price_field'), 10, 3);
+//Save field
+//add_action('woocommerce_save_product_variation', array($this, 'wc_save_variable_product_cost_price_field'), 10, 2);
     }
 
     function wc_subtract_stock_after_order_placed($order_id) {
@@ -57,8 +76,8 @@ class Duellintegration {
             return;
         }
 
-        $order_detail = getOrderDetailById($order_id); //to get the detail of order ID #101
-        //print_r($order_detail);
+        $order_detail = getWooCommerceOrderDetailById($order_id); //to get the detail of order ID #101
+//print_r($order_detail);
         write_log($order_detail);
         die;
     }
@@ -69,8 +88,9 @@ class Duellintegration {
         if (!empty($_POST['param'])) {
 
             $cronName = strtolower($_POST['param']);
-            do_action('duell_cron_' . $cronName);
-            $response['response'] = "Added in background " . $cronName;
+            $actionRes = apply_filters('duell_cron_' . $cronName, 'manual');
+
+            $response['response'] = implode(':::', $actionRes);
         } else {
             $response['response'] = "You didn't send the param";
         }
@@ -82,8 +102,297 @@ class Duellintegration {
         exit();
     }
 
+    public function sync_products($type = "manual") {
+
+        $type = strtolower($type);
+        $response = array();
+
+        $response['status'] = FALSE;
+        $response['message'] = 'Webservice is temporary unavailable. Please try again.';
+        $type = '';
+        try {
+            $duellIntegrationStatus = get_option('duellintegration_integration_status');
+            $duellLogStatus = get_option('duellintegration_log_status');
+            $duellClientNumber = (int) get_option('duellintegration_client_number');
+            $duellClientToken = get_option('duellintegration_client_token');
+            $duellStockDepartmentToken = get_option('duellintegration_stock_department_token');
+
+
+
+            if ($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') {
+
+                if ($duellClientNumber <= 0) {
+                    $text_error = 'Client number is not setup';
+
+                    write_log('callDuellStockSync() - ' . $text_error);
+                    $response['message'] = $text_error;
+
+                    $error_message = 'callDuellStockSync() - ' . $text_error;
+
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                    return $response;
+                }
+
+                if (strlen($duellClientToken) <= 0) {
+
+                    $text_error = 'Client token is not setup';
+
+                    write_log('callDuellStockSync() - ' . $text_error);
+                    $response['message'] = $text_error;
+
+                    $error_message = 'callDuellStockSync() - ' . $text_error;
+
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                    return $response;
+                }
+
+                if (strlen($duellStockDepartmentToken) <= 0) {
+
+                    $text_error = 'Stock department token is not setup';
+
+                    write_log('callDuellStockSync() - ' . $text_error);
+                    $response['message'] = $text_error;
+
+                    $error_message = 'callDuellStockSync() - ' . $text_error;
+
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                    return $response;
+                }
+
+//==put code
+                ini_set('memory_limit', '-1');
+                ini_set('max_execution_time', 0);
+                ini_set('default_socket_timeout', 500000);
+
+                $lastSyncDate = get_option('duellintegration_product_lastsync');
+
+                $start = 0;
+                $limit = $this->duellLimit;
+
+                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+
+                if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
+                    $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
+                }
+
+
+                $wsdata = callDuell('product/list', 'get', $apiData, 'json', $type);
+
+                if ($wsdata['status'] === true) {
+
+                    $totalRecord = $wsdata['total_count'];
+
+                    if ($totalRecord > 0) {
+
+                        if (isset($wsdata['products']) && !empty($wsdata['products'])) {
+                            $allData = $wsdata['products'];
+
+                            $this->processProductData($allData);
+                            sleep(10);
+
+                            $nextCounter = $start + $limit;
+
+
+                            while ($totalRecord > $limit && $totalRecord > $nextCounter) {
+
+
+                                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
+
+                                if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
+                                    $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
+                                }
+
+                                $wsdata = callDuell('product/list', 'get', $apiData, 'json', $type);
+
+
+                                if ($wsdata['status'] === true) {
+
+                                    $totalNRecord = $wsdata['total_count'];
+                                    if ($totalNRecord > 0) {
+
+                                        if (isset($wsdata['products']) && !empty($wsdata['products'])) {
+                                            $allData = $wsdata['products'];
+                                            $this->processProductData($allData);
+                                        }
+                                    }
+                                    $nextCounter = $nextCounter + $limit;
+                                }
+                                sleep(10);
+                            }
+                        }
+
+                        update_option('duellintegration_product_lastsync', date('Y-m-d H:i:s'));
+                    }
+
+                    $response['status'] = TRUE;
+                    $response['message'] = 'success';
+
+                    return $response;
+                } else {
+                    $text_error = $wsdata['message'];
+                    write_log('callDuellStockSync() - Error:: ' . $text_error);
+                    $response['message'] = $text_error;
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                }
+//==end put code
+            } else {
+                $text_error = 'Integration status is not active.';
+                write_log('callDuellStockSync() - ' . $text_error);
+                $response['message'] = $text_error;
+                if ($type != 'manual') {
+                    duellMailAlert($text_error, 422);
+                }
+                return $response;
+            }
+        } catch (Exception $e) {
+
+            $text_error = 'Catch exception throw:: ' . $e->getMessage();
+
+            write_log('callDuellStockSync() - ');
+            if ($type != 'manual') {
+                duellMailAlert($text_error, 422);
+            }
+        }
+        return $response;
+    }
+
+    function processProductData($data = array()) {
+
+
+//https://wordpress.stackexchange.com/questions/137501/how-to-add-product-in-woocommerce-with-php-code
+        $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
+
+        if (!empty($data)) {
+            foreach ($data as $product) {
+
+                $duellProductId = $product['product_id'];
+                $productNumber = $product['product_number'];
+
+                $relatedProductId = $product['related_product_id'];
+
+                $productName = $product['product_name'];
+                $description = $product['description'];
+
+                $barcode = $product['barcode'];
+                $categoryId = $product['category_id'];
+
+                $categoryName = $product['category_name'];
+                $vatratePercentage = $product['vatrate_percent'];
+                $costPrice = $product['cost_price'];
+                $priceIncTax = $product['price_inc_vat'];
+                $isDeleted = $product['is_deleted'];
+
+
+                $finalPrice = 0;
+
+                if ($woocommerce_prices_include_tax == 'yes') {
+                    $finalPrice = $priceIncTax;
+                } else {
+                    $vatrateMultiplier = 1 + ( $vatratePercentage / 100);
+                    $priceExTax = $priceIncTax / $vatrateMultiplier;
+
+                    $finalPrice = number_format($priceExTax, 4, '.', '');
+                }
+
+
+                $productExists = getWooCommerceProductBySku($productNumber);
+
+
+                if (is_null($productExists)) {
+
+                    //Create post
+                    $post = array(
+                        'post_author' => 1,
+                        'post_content' => $description,
+                        'post_status' => "pending",
+                        'post_title' => $productName,
+                        'post_parent' => '',
+                        'post_type' => "product",
+                    );
+
+
+                    $post_id = wp_insert_post($post, false);
+                } else {
+                    //Update post
+                    $post_id = $productExists;
+
+                    $post = array(
+                        'ID' => $post_id,
+                        'post_title' => $productName,
+                        'post_content' => $description
+                    );
+
+
+                    wp_update_post($post);
+                }
+                if ($post_id) {
+                    //$attach_id = get_post_meta($product->parent_id, "_thumbnail_id", true);
+                    //add_post_meta($post_id, '_thumbnail_id', $attach_id);
+                    //==for new product only
+                    if (is_null($productExists)) {
+                        wp_set_object_terms($post_id, 'simple', 'product_type');
+                        update_post_meta($post_id, '_wc_review_count', "0");
+                        update_post_meta($post_id, '_wc_rating_count', array());
+                        update_post_meta($post_id, '_wc_average_rating', "0");
+                        update_post_meta($post_id, '_sku', $productNumber);
+                        update_post_meta($post_id, '_sale_price_dates_from', "");
+                        update_post_meta($post_id, '_sale_price_dates_to', "");
+                        update_post_meta($post_id, 'total_sales', '0');
+                        update_post_meta($post_id, '_tax_status', 'taxable');
+                        update_post_meta($post_id, '_tax_class', 'standard');
+                        update_post_meta($post_id, '_manage_stock', "no");
+                        update_post_meta($post_id, '_stock_status', 'outofstock');
+                        update_post_meta($post_id, '_stock', "0");
+                        update_post_meta($post_id, '_backorders', "no");
+                        update_post_meta($post_id, '_sold_individually', "");
+
+                        update_post_meta($post_id, '_weight', "");
+                        update_post_meta($post_id, '_length', "");
+                        update_post_meta($post_id, '_width', "");
+                        update_post_meta($post_id, '_height', "");
+
+                        update_post_meta($post_id, '_upsell_ids', array());
+                        update_post_meta($post_id, '_crosssell_ids', array());
+
+                        update_post_meta($post_id, '_purchase_note', "");
+                        update_post_meta($post_id, '_default_attributes', array());
+                        update_post_meta($post_id, '_product_attributes', array());
+
+                        update_post_meta($post_id, '_virtual', 'no');
+                        update_post_meta($post_id, '_downloadable', 'no');
+
+                        update_post_meta($post_id, '_visibility', 'visible');
+
+                        update_post_meta($post_id, '_featured', "no");
+                    }
+
+                    wp_set_object_terms($post_id, $categoryName, 'product_cat');
+
+                    update_post_meta($post_id, '_barcode', $barcode);
+                    update_post_meta($post_id, '_regular_price', $finalPrice);
+                    update_post_meta($post_id, '_sale_price', $finalPrice);
+                    update_post_meta($post_id, '_price', $finalPrice);
+                }
+            }
+        }
+    }
+
     function plugin_init_setup() {
         $this->check_plugin_dependencies();
+
+        defined('DUELL_API_ENDPOINT') OR define('DUELL_API_ENDPOINT', 'http://panteon-kasse.devhost/api/v1/');
+        defined('DUELL_LOGIN_ACTION') OR define('DUELL_LOGIN_ACTION', 'getaccesstokens');
+        defined('DUELL_KEY_NAME') OR define('DUELL_KEY_NAME', 'duell_integration');
+        defined('DUELL_TOTAL_LOGIN_ATTEMPT') OR define('DUELL_TOTAL_LOGIN_ATTEMPT', 3);
+        defined('DUELL_CNT') OR define('DUELL_CNT', 0);
     }
 
     /**
@@ -143,8 +452,8 @@ class Duellintegration {
         }
 
         if (!wp_next_scheduled('duell_cron_sync_orders')) {
-            //$next3am = ( date('Hi') >= '0300' ) ? strtotime('+1day 3am') : strtotime('3am');
-            //wp_schedule_single_event($next3am, 'duell_cron_sync_orders');
+//$next3am = ( date('Hi') >= '0300' ) ? strtotime('+1day 3am') : strtotime('3am');
+//wp_schedule_single_event($next3am, 'duell_cron_sync_orders');
             wp_schedule_event(strtotime('03:00:00'), 'daily3am', 'duell_cron_sync_orders');
         }
     }
@@ -192,10 +501,10 @@ class Duellintegration {
         delete_option('duellintegration_order_department_token');
         delete_option('duellintegration_api_access_token');
         delete_option('duellintegration_log_status');
-    }
+        delete_option('duellintegration_integration_status');
 
-    public function sync_products() {
-        update_option('duellintegration_client_number', mt_rand(100000, 999999));
+        delete_option('duellintegration_product_lastsync');
+        delete_option('duellintegration_order_lastsync');
     }
 
     public function sync_prices() {
@@ -203,12 +512,20 @@ class Duellintegration {
     }
 
     public function sync_stocks() {
+
+        /*
+         * $product = new WC_Product($id);
+          find product with SKU and set stock
+          then you can update the stock level with
+
+          $product->set_stock($stock);
+         */
         update_option('duellintegration_stock_department_token', date('Y-m-d H:i:s'));
     }
 
     public function sync_orders() {
         $this->wc_subtract_stock_after_order_placed(16);
-        //update_option('duellintegration_order_department_token', date('Y-m-d H:i:s'));
+//update_option('duellintegration_order_department_token', date('Y-m-d H:i:s'));
     }
 
     function create_plugin_settings_page() {
@@ -259,7 +576,7 @@ class Duellintegration {
 // check if the user have submitted the settings
 // wordpress will add the "settings-updated" $_GET parameter to the url
         if (isset($_GET['settings-updated'])) {
-            // add settings saved message with the class of "updated"
+// add settings saved message with the class of "updated"
             add_settings_error('duellintegration_messages', 'duellintegration_message', __('Settings Saved', 'duellintegration'), 'updated');
         }
     }
@@ -352,30 +669,30 @@ class Duellintegration {
     public function setup_action_javascript() {
         ?><script>
 
-                    (function ($) {
-                      var $output = $('#manual-cron-output');
+            (function ($) {
+              var $output = $('#manual-cron-output');
 
 
-                      $('.manual-cron').click(function () {
+              $('.manual-cron').click(function () {
 
-                        console.log($(this).attr('data-type'))
-                        jQuery.ajax({
-                          type: "POST",
-                          url: ajaxurl,
-                          data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
-                          success: function (data) {
-                            $output.html(data.response);
-                          },
-                          error: function (jqXHR, textStatus, errorThrown) {
-                            $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
-                          }
-                        }).done(function (msg) {
-                          // alert("Data Saved: " + msg.response);
-                          $output.html('<code>OK</code>' + msg.response);
-                        });
+                console.log($(this).attr('data-type'))
+                jQuery.ajax({
+                  type: "POST",
+                  url: ajaxurl,
+                  data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
+                  success: function (data) {
+                    $output.html(data.response);
+                  },
+                  error: function (jqXHR, textStatus, errorThrown) {
+                    $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
+                  }
+                }).done(function (msg) {
+                  // alert("Data Saved: " + msg.response);
+                  $output.html('<code>OK</code>' + msg.response);
+                });
 
-                      });
-                    }(jQuery));
+              });
+            }(jQuery));
         </script>
         <?php
     }
@@ -452,12 +769,28 @@ class Duellintegration {
                 'helper' => '',
                 'supplimental' => ''
             ),
+            array(
+                'uid' => 'duellintegration_integration_status',
+                'label' => __('Enable Sync', 'duellintegration'),
+                'section' => 'duell_configuration_section',
+                'type' => 'select',
+                'options' => array(
+                    '1' => 'Yes',
+                    '0' => 'No'
+                ),
+                'default' => 1,
+                'class' => "",
+                'helper' => '',
+                'supplimental' => ''
+            )
         );
         foreach ($fields as $field) {
             add_settings_field($field['uid'], $field['label'], array($this, 'field_callback'), 'duellintegration', $field['section'], $field);
             register_setting('duellintegration', $field['uid'], array($this, 'plugin_validate_' . $field['uid'] . '_option'));
         }
         register_setting('duellintegration', 'duellintegration_api_access_token');
+        register_setting('duellintegration', 'duellintegration_product_lastsync');
+        register_setting('duellintegration', 'duellintegration_order_lastsync');
     }
 
     public function field_callback($arguments) {
@@ -520,6 +853,10 @@ class Duellintegration {
         }
     }
 
+    public function plugin_validate_duellintegration_integration_status_option($input) {
+        return sanitize_text_field($input);
+    }
+
     public function plugin_validate_duellintegration_log_status_option($input) {
         return sanitize_text_field($input);
     }
@@ -570,19 +907,54 @@ class Duellintegration {
     }
 
     public function enqueue_admin_scripts_and_styles() {
-
-        $doing_wp_cron = sprintf('%.22F', microtime(true));
-        $url = add_query_arg('doing_wp_cron', $doing_wp_cron, site_url('wp-cron.php'));
-        $timeout = apply_filters('manual-cron-timeout', 20000);
-        $script_vars = array(
-            'url' => $url,
-            'timeout' => $timeout,
-        );
-
         wp_enqueue_style('duellintegration_admin', plugin_dir_url(__FILE__) . '/assets/css/duellintegration.css');
+    }
 
-        //wp_enqueue_script('duellintegration_admin', plugin_dir_url(__FILE__) . '/assets/js/duellintegration.js');
-        //wp_localize_script('duellintegration_admin', 'DUELLMANUALCRON', $script_vars);
+    function wc_add_product_cost_price_field() {
+
+        $currency = get_woocommerce_currency_symbol();
+
+        woocommerce_wp_text_input(
+            array(
+                'id' => '_cost_price',
+                'class' => '',
+                'wrapper_class' => 'pricing show_if_simple show_if_external',
+                'label' => __("Cost price", 'products-cost-price-for-woocommerce') . " ($currency)",
+                'data_type' => 'price',
+                'desc_tip' => true,
+                'description' => __('This is the buying-in price of the product.', 'products-cost-price-for-woocommerce'),
+            )
+        );
+    }
+
+    function wc_save_product_cost_price_field($post_id, $post) {
+        if (isset($_POST['_cost_price'])) {
+            $cost_price = ($_POST['_cost_price'] === '' ) ? '' : wc_format_decimal($_POST['_cost_price']);
+            update_post_meta($post_id, '_cost_price', $cost_price);
+        }
+    }
+
+    /**
+     * Create purchase price field for variations
+     */
+    function wc_add_variable_product_cost_price_field($loop, $variation_data, $variation) {
+        $currency = get_woocommerce_currency_symbol();
+        woocommerce_wp_text_input(array(
+            'id' => 'variable_cost_price[' . $loop . ']',
+            'wrapper_class' => 'form-row form-row-first',
+            'label' => __("Cost price", 'products-cost-price-for-woocommerce') . " ($currency)",
+            'placeholder' => '',
+            'data_type' => 'price',
+            'desc_tip' => false,
+            'value' => get_post_meta($variation->ID, '_cost_price', true)
+        ));
+    }
+
+    function wc_save_variable_product_cost_price_field($variation_id, $i) {
+        if (isset($_POST['variable_cost_price'][$i])) {
+            $cost_price = ($_POST['variable_cost_price'][$i] === '' ) ? '' : wc_format_decimal($_POST['variable_cost_price'][$i]);
+            update_post_meta($variation_id, '_cost_price', $cost_price);
+        }
     }
 
 }
