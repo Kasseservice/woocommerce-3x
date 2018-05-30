@@ -25,6 +25,56 @@ if (!function_exists('validateDateTime')) {
 
 }
 
+
+if (!function_exists('getWooCommerceOrderProductsById')) {
+
+
+//to get full order details
+    function getWooCommerceOrderProductsById($id, $fields = null, $filter = array()) {
+
+        if (is_wp_error($id))
+            return $id;
+// Get the decimal precession
+        $dp = (isset($filter['dp'])) ? intval($filter['dp']) : 2;
+
+        $order = wc_get_order($id); //getting order Object
+        $order_data = array(
+            'id' => $order->get_id(),
+            'order_number' => $order->get_order_number()
+        );
+//getting all line items
+        foreach ($order->get_items() as $item_id => $item) {
+            $product = $item->get_product();
+            $product_id = null;
+            $product_sku = null;
+// Check if the product exists.
+            if (is_object($product)) {
+                $product_id = $product->get_id();
+                $product_sku = $product->get_sku();
+            }
+            $order_data['line_items'][] = array(
+                'id' => $item_id,
+                'subtotal' => wc_format_decimal($order->get_line_subtotal($item, false, false), $dp),
+                'subtotal_tax' => wc_format_decimal($item['line_subtotal_tax'], $dp),
+                'total' => wc_format_decimal($order->get_line_total($item, false, false), $dp),
+                'total_tax' => wc_format_decimal($item['line_tax'], $dp),
+                'price' => wc_format_decimal($order->get_item_total($item, false, false), $dp),
+                'quantity' => wc_stock_amount($item['qty']),
+                'tax_class' => (!empty($item['tax_class']) ) ? $item['tax_class'] : null,
+                'name' => $item['name'],
+                'product_id' => (!empty($item->get_variation_id()) && ('product_variation' === $product->post_type )) ? $product->get_parent_id() : $product_id,
+                'variation_id' => (!empty($item->get_variation_id()) && ('product_variation' === $product->post_type )) ? $product_id : 0,
+                'product_url' => get_permalink($product_id),
+                'product_thumbnail_url' => wp_get_attachment_image_src(get_post_thumbnail_id($product_id), 'thumbnail', TRUE)[0],
+                'sku' => $product_sku,
+                'meta' => wc_display_item_meta($item)
+            );
+        }
+        return array('order' => apply_filters('woocommerce_api_order_response', $order_data, $order, $fields));
+    }
+
+}
+
 //http://www.webhat.in/article/woocommerce-tutorial/how-to-get-order-details-by-order-id/
 //https://stackoverflow.com/questions/39401393/how-to-get-woocommerce-order-details
 if (!function_exists('getWooCommerceOrderDetailById')) {
@@ -70,10 +120,10 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
                 'address_2' => $order->get_billing_address_2(),
                 'city' => $order->get_billing_city(),
                 'state' => $order->get_billing_state(),
-                'formated_state' => WC()->countries->states[$order->get_billing_country()][$order->get_billing_state()], //human readable formated state name
+                'formated_state' => (!empty($order->get_billing_country()) && !empty($order->get_billing_state())) ? WC()->countries->states[$order->get_billing_country()][$order->get_billing_state()] : '', //human readable formated state name
                 'postcode' => $order->get_billing_postcode(),
                 'country' => $order->get_billing_country(),
-                'formated_country' => WC()->countries->countries[$order->get_billing_country()], //human readable formated country name
+                'formated_country' => !empty($order->get_billing_country()) ? WC()->countries->countries[$order->get_billing_country()] : '', //human readable formated country name
                 'email' => $order->get_billing_email(),
                 'phone' => $order->get_billing_phone()
             ),
@@ -85,10 +135,10 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
                 'address_2' => $order->get_shipping_address_2(),
                 'city' => $order->get_shipping_city(),
                 'state' => $order->get_shipping_state(),
-                'formated_state' => WC()->countries->states[$order->get_shipping_country()][$order->get_shipping_state()], //human readable formated state name
+                'formated_state' => (!empty($order->get_shipping_country()) && !empty($order->get_shipping_state())) ? WC()->countries->states[$order->get_shipping_country()][$order->get_shipping_state()] : '', //human readable formated state name
                 'postcode' => $order->get_shipping_postcode(),
                 'country' => $order->get_shipping_country(),
-                'formated_country' => WC()->countries->countries[$order->get_shipping_country()] //human readable formated country name
+                'formated_country' => !empty($order->get_shipping_country()) ? WC()->countries->countries[$order->get_shipping_country()] : '' //human readable formated country name
             ),
             'note' => $order->get_customer_note(),
             'customer_ip' => $order->get_customer_ip_address(),

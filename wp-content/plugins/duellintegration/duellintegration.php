@@ -107,13 +107,30 @@ class Duellintegration {
 
 //==put code
 
-                $orderDetail = getWooCommerceOrderDetailById($order_id);
+                $orderDetail = getWooCommerceOrderProductsById($order_id, array('sku', 'quantity'));
 
-                write_log($orderDetail);
-                die;
+                //write_log($orderDetail);
+                //die;
+
+
 
                 $duellProductData = array();
                 $productStockLogStr = PHP_EOL . PHP_EOL;
+
+                if (isset($orderDetail['order']['line_items']) && !empty($orderDetail['order']['line_items'])) {
+                    $orderLineItems = $orderDetail['order']['line_items'];
+
+                    foreach ($orderLineItems as $lineItem) {
+                        if (isset($lineItem['id']) && $lineItem['id'] > 0 && isset($lineItem['sku']) && $lineItem['sku'] != '' && isset($lineItem['quantity']) && $lineItem['quantity'] > 0) {
+                            $duellProductData[] = array('product_number' => $lineItem['sku'], 'quantity' => $lineItem['quantity']);
+                            $productStockLogStr .= 'Product Id: ' . $lineItem['id'] . ' SKU: ' . $lineItem['sku'] . ' Qty: ' . $lineItem['quantity'] . PHP_EOL;
+                        }
+                    }
+                }
+
+                //write_log($productStockLogStr);
+                // write_log($duellProductData);
+                // die;
 
 
                 ini_set('memory_limit', '-1');
@@ -129,8 +146,7 @@ class Duellintegration {
                 $wsdata = callDuell('product/adjust-stock', 'post', $apiData);
 
                 if ($wsdata['status'] === true) {
-
-                    //write_log('duellStockUpdateSuccess() Product Id: ' . $post_id . ' Current Status: ' . $stockStatus . ' Current Qty: ' . $currentStock . ' New Qty: ' . $stock, true);
+                    write_log('duellStockUpdateSuccess():: Order Id: ' . $orderDetail['order']['id'] . $productStockLogStr, true);
                 } else {
                     $text_error = 'AdjustStockSync() - Error:: ' . $wsdata['message'];
                     write_log($text_error);
@@ -171,7 +187,7 @@ class Duellintegration {
     }
 
     public function sync_orders($type = "manual") {
-        $this->wc_subtract_stock_after_order_placed(16);
+        $this->wc_subtract_stock_after_order_placed(151);
     }
 
     public function sync_stocks($type = "manual") {
