@@ -2,9 +2,9 @@
 
 if (!function_exists('write_log')) {
 
-    function write_log($log) {
+    function write_log($log, $excludeCheck = false) {
         $duellLogStatus = get_option('duellintegration_log_status');
-        if ($duellLogStatus == '1' || $duellLogStatus == 1) {
+        if (($duellLogStatus == '1' || $duellLogStatus == 1) || $excludeCheck == true) {
             error_log(PHP_EOL . PHP_EOL, 3, WP_CONTENT_DIR . '/duell-' . date('Y-m-d') . '.log');
             if (is_array($log) || is_object($log)) {
                 error_log(print_r($log, true), 3, WP_CONTENT_DIR . '/duell-' . date('Y-m-d') . '.log');
@@ -355,6 +355,7 @@ if (!function_exists('callDuell')) {
                 $token = get_option('duellintegration_api_access_token');
             } else if (isset($_COOKIE[DUELL_KEY_NAME]) && !empty($_COOKIE[DUELL_KEY_NAME])) {
                 $token = $_COOKIE[DUELL_KEY_NAME];
+                update_option('duellintegration_api_access_token', $token);
             } else {
 
                 $loginAttempt = 1;

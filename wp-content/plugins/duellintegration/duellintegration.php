@@ -90,7 +90,7 @@ class Duellintegration {
             $cronName = strtolower($_POST['param']);
             $actionRes = apply_filters('duell_cron_' . $cronName, 'manual');
 
-            $response['response'] = implode(':::', $actionRes);
+            $response['response'] = $actionRes['message'];
         } else {
             $response['response'] = "You didn't send the param";
         }
@@ -100,6 +100,381 @@ class Duellintegration {
         echo json_encode($response);
 
         exit();
+    }
+
+    public function sync_stocks($type = "manual") {
+
+        $type = strtolower($type);
+        $response = array();
+
+        $response['status'] = FALSE;
+        $response['message'] = 'Webservice is temporary unavailable. Please try again.';
+        $type = '';
+        try {
+            $duellIntegrationStatus = get_option('duellintegration_integration_status');
+            $duellClientNumber = (int) get_option('duellintegration_client_number');
+            $duellClientToken = get_option('duellintegration_client_token');
+            $duellStockDepartmentToken = get_option('duellintegration_stock_department_token');
+
+            if ($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') {
+
+                if ($duellClientNumber <= 0) {
+                    $text_error = 'Client number is not setup';
+
+                    write_log('StockSync() - ' . $text_error);
+                    $response['message'] = $text_error;
+
+                    $error_message = 'StockSync() - ' . $text_error;
+
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                    return $response;
+                }
+
+                if (strlen($duellClientToken) <= 0) {
+
+                    $text_error = 'Client token is not setup';
+
+                    write_log('StockSync() - ' . $text_error);
+                    $response['message'] = $text_error;
+
+                    $error_message = 'StockSync() - ' . $text_error;
+
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                    return $response;
+                }
+
+                if (strlen($duellStockDepartmentToken) <= 0) {
+
+                    $text_error = 'Stock department token is not setup';
+
+                    write_log('StockSync() - ' . $text_error);
+                    $response['message'] = $text_error;
+
+                    $error_message = 'StockSync() - ' . $text_error;
+
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                    return $response;
+                }
+
+//==put code
+                ini_set('memory_limit', '-1');
+                ini_set('max_execution_time', 0);
+                ini_set('default_socket_timeout', 500000);
+
+
+
+                $start = 0;
+                $limit = $this->duellLimit;
+
+                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+                $apiData['department'] = $duellStockDepartmentToken;
+
+
+                $wsdata = callDuell('all/product/stock', 'get', $apiData, 'json', $type);
+
+                if ($wsdata['status'] === true) {
+
+                    $totalRecord = $wsdata['total_count'];
+
+                    if ($totalRecord > 0) {
+
+                        if (isset($wsdata['data']) && !empty($wsdata['data'])) {
+                            $allData = $wsdata['data'];
+
+                            $this->processProductStockData($allData);
+                            sleep(10);
+
+                            $nextCounter = $start + $limit;
+
+
+                            while ($totalRecord > $limit && $totalRecord > $nextCounter) {
+
+
+                                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
+                                $apiData['department'] = $duellStockDepartmentToken;
+
+
+                                $wsdata = callDuell('all/product/stock', 'get', $apiData, 'json', $type);
+
+
+                                if ($wsdata['status'] === true) {
+
+                                    $totalNRecord = $wsdata['total_count'];
+                                    if ($totalNRecord > 0) {
+
+                                        if (isset($wsdata['data']) && !empty($wsdata['data'])) {
+                                            $allData = $wsdata['data'];
+                                            $this->processProductStockData($allData);
+                                        }
+                                    }
+                                    $nextCounter = $nextCounter + $limit;
+                                }
+                                sleep(10);
+                            }
+                        }
+                    }
+
+                    $response['status'] = TRUE;
+                    $response['message'] = 'success';
+
+                    return $response;
+                } else {
+                    $text_error = $wsdata['message'];
+                    write_log('StockSync() - Error:: ' . $text_error);
+                    $response['message'] = $text_error;
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                }
+//==end put code
+            } else {
+                $text_error = 'Integration status is not active.';
+                write_log('StockSync() - ' . $text_error);
+                $response['message'] = $text_error;
+                if ($type != 'manual') {
+                    duellMailAlert($text_error, 422);
+                }
+                return $response;
+            }
+        } catch (Exception $e) {
+
+            $text_error = 'Catch exception throw:: ' . $e->getMessage();
+
+            write_log('StockSync() - ');
+            if ($type != 'manual') {
+                duellMailAlert($text_error, 422);
+            }
+        }
+        return $response;
+    }
+
+    function processProductStockData($data = array()) {
+
+
+        $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
+
+        if (!empty($data)) {
+            foreach ($data as $product) {
+
+                $productNumber = isset($product['product_number']) ? $product['product_number'] : '';
+                $stock = isset($product['department'][0]['stock']) ? $product['department'][0]['stock'] : 0;
+
+
+                $productExists = getWooCommerceProductBySku($productNumber);
+
+                if (!is_null($productExists)) {
+
+                    $post_id = $productExists;
+
+                    $manageStock = get_post_meta($post_id, '_manage_stock', true);
+
+
+                    if ($manageStock == 'yes') {
+                        $stockStatus = get_post_meta($post_id, '_stock_status', true);
+                        $currentStock = get_post_meta($post_id, '_stock', true);
+
+                        write_log('processStockUpdation() Before updating stock - Product Id: ' . $post_id . ' Current Status: ' . $stockStatus . ' Current Qty: ' . $currentStock . ' New Qty: ' . $stock, true);
+
+                        $stockStatusMsg = 'outofstock';
+                        if ($stock > 0) {
+                            $stockStatusMsg = 'instock';
+                        }
+
+                        update_post_meta($post_id, '_stock_status', $stockStatusMsg);
+                        update_post_meta($post_id, '_stock', $stock);
+                    }
+                }
+            }
+        }
+    }
+
+    public function sync_prices($type = "manual") {
+        $type = strtolower($type);
+        $response = array();
+
+        $response['status'] = FALSE;
+        $response['message'] = 'Webservice is temporary unavailable. Please try again.';
+        $type = '';
+        try {
+            $duellIntegrationStatus = get_option('duellintegration_integration_status');
+            $duellClientNumber = (int) get_option('duellintegration_client_number');
+            $duellClientToken = get_option('duellintegration_client_token');
+
+
+            if ($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') {
+
+                if ($duellClientNumber <= 0) {
+                    $text_error = 'Client number is not setup';
+
+                    write_log('PricesSync() - ' . $text_error);
+                    $response['message'] = $text_error;
+
+                    $error_message = 'PricesSync() - ' . $text_error;
+
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                    return $response;
+                }
+
+                if (strlen($duellClientToken) <= 0) {
+
+                    $text_error = 'Client token is not setup';
+
+                    write_log('PricesSync() - ' . $text_error);
+                    $response['message'] = $text_error;
+
+                    $error_message = 'PricesSync() - ' . $text_error;
+
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                    return $response;
+                }
+
+
+//==put code
+                ini_set('memory_limit', '-1');
+                ini_set('max_execution_time', 0);
+                ini_set('default_socket_timeout', 500000);
+
+                $lastSyncDate = get_option('duellintegration_prices_lastsync');
+
+                $start = 0;
+                $limit = $this->duellLimit;
+
+                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+
+                if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
+                    $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
+                }
+
+
+                $wsdata = callDuell('product/list', 'get', $apiData, 'json', $type);
+
+                if ($wsdata['status'] === true) {
+
+                    $totalRecord = $wsdata['total_count'];
+
+                    if ($totalRecord > 0) {
+
+                        if (isset($wsdata['products']) && !empty($wsdata['products'])) {
+                            $allData = $wsdata['products'];
+
+                            $this->processProductPriceData($allData);
+                            sleep(10);
+
+                            $nextCounter = $start + $limit;
+
+
+                            while ($totalRecord > $limit && $totalRecord > $nextCounter) {
+
+
+                                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
+
+                                if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
+                                    $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
+                                }
+
+                                $wsdata = callDuell('product/list', 'get', $apiData, 'json', $type);
+
+
+                                if ($wsdata['status'] === true) {
+
+                                    $totalNRecord = $wsdata['total_count'];
+                                    if ($totalNRecord > 0) {
+
+                                        if (isset($wsdata['products']) && !empty($wsdata['products'])) {
+                                            $allData = $wsdata['products'];
+                                            $this->processProductPriceData($allData);
+                                        }
+                                    }
+                                    $nextCounter = $nextCounter + $limit;
+                                }
+                                sleep(10);
+                            }
+                        }
+
+                        update_option('duellintegration_prices_lastsync', date('Y-m-d H:i:s'));
+                    }
+
+                    $response['status'] = TRUE;
+                    $response['message'] = 'success';
+
+                    return $response;
+                } else {
+                    $text_error = $wsdata['message'];
+                    write_log('PricesSync() - Error:: ' . $text_error);
+                    $response['message'] = $text_error;
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                }
+//==end put code
+            } else {
+                $text_error = 'Integration status is not active.';
+                write_log('PricesSync() - ' . $text_error);
+                $response['message'] = $text_error;
+                if ($type != 'manual') {
+                    duellMailAlert($text_error, 422);
+                }
+                return $response;
+            }
+        } catch (Exception $e) {
+
+            $text_error = 'Catch exception throw:: ' . $e->getMessage();
+
+            write_log('PricesSync() - ');
+            if ($type != 'manual') {
+                duellMailAlert($text_error, 422);
+            }
+        }
+        return $response;
+    }
+
+    function processProductPriceData($data = array()) {
+
+
+        $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
+
+        if (!empty($data)) {
+            foreach ($data as $product) {
+
+                $productNumber = $product['product_number'];
+
+                $vatratePercentage = $product['vatrate_percent'];
+                $costPrice = $product['cost_price'];
+                $priceIncTax = $product['price_inc_vat'];
+
+                $finalPrice = 0;
+
+                if ($woocommerce_prices_include_tax == 'yes') {
+                    $finalPrice = $priceIncTax;
+                } else {
+                    $vatrateMultiplier = 1 + ( $vatratePercentage / 100);
+                    $priceExTax = $priceIncTax / $vatrateMultiplier;
+
+                    $finalPrice = number_format($priceExTax, 2, '.', '');
+                }
+
+
+                $productExists = getWooCommerceProductBySku($productNumber);
+
+                if (!is_null($productExists)) {
+
+                    $post_id = $productExists;
+                    update_post_meta($post_id, '_regular_price', $finalPrice);
+                    update_post_meta($post_id, '_sale_price', $finalPrice);
+                    update_post_meta($post_id, '_price', $finalPrice);
+                }
+            }
+        }
     }
 
     public function sync_products($type = "manual") {
@@ -112,22 +487,18 @@ class Duellintegration {
         $type = '';
         try {
             $duellIntegrationStatus = get_option('duellintegration_integration_status');
-            $duellLogStatus = get_option('duellintegration_log_status');
             $duellClientNumber = (int) get_option('duellintegration_client_number');
             $duellClientToken = get_option('duellintegration_client_token');
-            $duellStockDepartmentToken = get_option('duellintegration_stock_department_token');
-
-
 
             if ($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') {
 
                 if ($duellClientNumber <= 0) {
                     $text_error = 'Client number is not setup';
 
-                    write_log('callDuellStockSync() - ' . $text_error);
+                    write_log('ProductSync() - ' . $text_error);
                     $response['message'] = $text_error;
 
-                    $error_message = 'callDuellStockSync() - ' . $text_error;
+                    $error_message = 'ProductSync() - ' . $text_error;
 
                     if ($type != 'manual') {
 //duellMailAlert($text_error, 422);
@@ -139,10 +510,10 @@ class Duellintegration {
 
                     $text_error = 'Client token is not setup';
 
-                    write_log('callDuellStockSync() - ' . $text_error);
+                    write_log('ProductSync() - ' . $text_error);
                     $response['message'] = $text_error;
 
-                    $error_message = 'callDuellStockSync() - ' . $text_error;
+                    $error_message = 'ProductSync() - ' . $text_error;
 
                     if ($type != 'manual') {
 //duellMailAlert($text_error, 422);
@@ -150,20 +521,6 @@ class Duellintegration {
                     return $response;
                 }
 
-                if (strlen($duellStockDepartmentToken) <= 0) {
-
-                    $text_error = 'Stock department token is not setup';
-
-                    write_log('callDuellStockSync() - ' . $text_error);
-                    $response['message'] = $text_error;
-
-                    $error_message = 'callDuellStockSync() - ' . $text_error;
-
-                    if ($type != 'manual') {
-//duellMailAlert($text_error, 422);
-                    }
-                    return $response;
-                }
 
 //==put code
                 ini_set('memory_limit', '-1');
@@ -236,7 +593,7 @@ class Duellintegration {
                     return $response;
                 } else {
                     $text_error = $wsdata['message'];
-                    write_log('callDuellStockSync() - Error:: ' . $text_error);
+                    write_log('ProductSync() - Error:: ' . $text_error);
                     $response['message'] = $text_error;
                     if ($type != 'manual') {
 //duellMailAlert($text_error, 422);
@@ -245,7 +602,7 @@ class Duellintegration {
 //==end put code
             } else {
                 $text_error = 'Integration status is not active.';
-                write_log('callDuellStockSync() - ' . $text_error);
+                write_log('ProductSync() - ' . $text_error);
                 $response['message'] = $text_error;
                 if ($type != 'manual') {
                     duellMailAlert($text_error, 422);
@@ -256,7 +613,7 @@ class Duellintegration {
 
             $text_error = 'Catch exception throw:: ' . $e->getMessage();
 
-            write_log('callDuellStockSync() - ');
+            write_log('ProductSync() - ');
             if ($type != 'manual') {
                 duellMailAlert($text_error, 422);
             }
@@ -299,7 +656,7 @@ class Duellintegration {
                     $vatrateMultiplier = 1 + ( $vatratePercentage / 100);
                     $priceExTax = $priceIncTax / $vatrateMultiplier;
 
-                    $finalPrice = number_format($priceExTax, 4, '.', '');
+                    $finalPrice = number_format($priceExTax, 2, '.', '');
                 }
 
 
@@ -348,7 +705,7 @@ class Duellintegration {
                         update_post_meta($post_id, 'total_sales', '0');
                         update_post_meta($post_id, '_tax_status', 'taxable');
                         update_post_meta($post_id, '_tax_class', 'standard');
-                        update_post_meta($post_id, '_manage_stock', "no");
+                        update_post_meta($post_id, '_manage_stock', "yes");
                         update_post_meta($post_id, '_stock_status', 'outofstock');
                         update_post_meta($post_id, '_stock', "0");
                         update_post_meta($post_id, '_backorders', "no");
@@ -440,6 +797,7 @@ class Duellintegration {
         );";
         $wpdb->query($structure);
 
+
         if (!wp_next_scheduled('duell_cron_sync_products')) {
             wp_schedule_event(time(), 'every3hours', 'duell_cron_sync_products');
         }
@@ -505,22 +863,7 @@ class Duellintegration {
 
         delete_option('duellintegration_product_lastsync');
         delete_option('duellintegration_order_lastsync');
-    }
-
-    public function sync_prices() {
-        update_option('duellintegration_client_token', date('Y-m-d H:i:s'));
-    }
-
-    public function sync_stocks() {
-
-        /*
-         * $product = new WC_Product($id);
-          find product with SKU and set stock
-          then you can update the stock level with
-
-          $product->set_stock($stock);
-         */
-        update_option('duellintegration_stock_department_token', date('Y-m-d H:i:s'));
+        delete_option('duellintegration_prices_lastsync');
     }
 
     public function sync_orders() {
@@ -788,9 +1131,6 @@ class Duellintegration {
             add_settings_field($field['uid'], $field['label'], array($this, 'field_callback'), 'duellintegration', $field['section'], $field);
             register_setting('duellintegration', $field['uid'], array($this, 'plugin_validate_' . $field['uid'] . '_option'));
         }
-        register_setting('duellintegration', 'duellintegration_api_access_token');
-        register_setting('duellintegration', 'duellintegration_product_lastsync');
-        register_setting('duellintegration', 'duellintegration_order_lastsync');
     }
 
     public function field_callback($arguments) {
