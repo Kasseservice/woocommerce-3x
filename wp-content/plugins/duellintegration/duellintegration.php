@@ -70,6 +70,288 @@ class Duellintegration {
 //add_action('woocommerce_save_product_variation', array($this, 'wc_save_variable_product_cost_price_field'), 10, 2);
     }
 
+    function manual_run_custom_cron() {
+
+        $reponse = array();
+        if (!empty($_POST['param'])) {
+
+            $cronName = strtolower($_POST['param']);
+            $actionRes = apply_filters('duell_cron_' . $cronName, 'manual');
+
+            $response['response'] = $actionRes['message'];
+        } else {
+            $response['response'] = "You didn't send the param";
+        }
+
+
+        header("Content-Type: application/json");
+        echo json_encode($response);
+
+        exit();
+    }
+
+    public function sync_orders($type = "manual") {
+
+        //write_log(getWooCommerceOrderDetailById(267));  //==without tax
+        //write_log(getWooCommerceOrderDetailById(268));  //==with tax  but price inclusive tax
+//        write_log(getWooCommerceOrderDetailById(261));  //==normal order with tax
+//        write_log(getWooCommerceOrderDetailById(263));  //== discount in % with tax
+//        write_log(getWooCommerceOrderDetailById(265));   //==discount in amount with tax
+        //die;
+
+        global $wpdb;
+        $type = strtolower($type);
+        $response = array();
+
+        $response['status'] = FALSE;
+        $response['message'] = 'Webservice is temporary unavailable. Please try again.';
+
+        try {
+            $duellIntegrationStatus = get_option('duellintegration_integration_status');
+            $duellClientNumber = (int) get_option('duellintegration_client_number');
+            $duellClientToken = get_option('duellintegration_client_token');
+            $duellOrderDepartmentToken = get_option('duellintegration_order_department_token');
+
+            if ($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') {
+
+                if ($duellClientNumber <= 0) {
+                    $text_error = 'Client number is not setup';
+
+                    write_log('OrderSync() - ' . $text_error);
+                    $response['message'] = $text_error;
+
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                    return $response;
+                }
+
+                if (strlen($duellClientToken) <= 0) {
+
+                    $text_error = 'Client token is not setup';
+
+                    write_log('OrderSync() - ' . $text_error);
+                    $response['message'] = $text_error;
+
+                    if ($type != 'manual') {
+//duellMailAlert($text_error, 422);
+                    }
+                    return $response;
+                }
+
+//==put code
+                //get all post with post_status=wc-completed,  post_type=shop_order
+
+
+                $fetchNonSyncedOrders = $wpdb->get_results("SELECT wp_posts.ID,wp_posts.post_date FROM wp_posts  LEFT JOIN wp_postmeta ON (wp_posts.ID = wp_postmeta.post_id AND wp_postmeta.meta_key = '_duell_order_id' )  LEFT JOIN wp_postmeta AS mt1 ON ( wp_posts.ID = mt1.post_id ) WHERE 1=1  AND (
+  wp_postmeta.post_id IS NULL
+  OR
+ ( mt1.meta_key = '_duell_order_id' AND mt1.meta_value IS NULL )
+  OR
+  ( mt1.meta_key = '_duell_order_id' AND mt1.meta_value = '' )
+) AND wp_posts.post_type = 'shop_order' AND ((wp_posts.post_status = 'wc-completed')) GROUP BY wp_posts.ID ORDER BY wp_posts.ID ASC", ARRAY_A);
+
+
+                //write_log($fetchNonSyncedOrders);
+
+                $prepareOrderData = array();
+
+
+
+                if (!empty($fetchNonSyncedOrders)) {
+                    foreach ($fetchNonSyncedOrders as $postId) {
+                        $orderDetails = getWooCommerceOrderDetailById($postId['ID']);
+                        //write_log($orderDetails);
+                        //die;
+                        $orderData = array();
+                        $orderProductData = array();
+
+                        if (is_array($orderDetails) && !empty($orderDetails) && !is_null($orderDetails) && isset($orderDetails['order']) && !empty($orderDetails['order']['line_items'])) {
+
+                            $orderDetailData = $orderDetails['order'];
+
+
+                            if (!is_null($duellOrderDepartmentToken) && $duellOrderDepartmentToken != '') {
+                                $orderData['department_id'] = $duellOrderDepartmentToken;
+                            }
+
+                            $orderData['customer_id'] = 0;
+                            $orderData['comments'] = $orderDetailData['note'];
+                            $orderData['reference_comment'] = '';
+                            $orderData['reference_order_number'] = $orderDetailData['order_number'];
+                            $orderData['round_off_amount'] = 0;
+
+                            foreach ($orderDetailData['line_items'] as $orderLine) {
+                                $orderProduct = array();
+
+                                $price_ex_vat = 0.00;
+                                $price_inc_vat = 0.00;
+                                $vatrate_percentage = 0.00;
+                                $discount_percentage = 0.00;
+
+                                $quantity = $orderLine['quantity'];
+                                $tax_class = $orderLine['tax_class'];
+
+                                $singleQtyPriceAfterDiscount = $orderLine['price'];
+
+                                //==original cost
+                                $subtotalWithQty = $orderLine['subtotal'];
+                                $subtotalTaxWithQty = $orderLine['subtotal_tax'];
+
+                                $singleQtyPrice = $subtotalWithQty / $quantity;
+                                $singleQtyTax = $subtotalTaxWithQty / $quantity;
+
+                                //==total cost after discount
+                                $totalWithQty = $orderLine['subtotal'];
+                                $totalTaxWithQty = $orderLine['subtotal_tax'];
+
+                                $singleTotalQtyPrice = $totalWithQty / $quantity;
+                                $singleTotalQtyTax = $totalTaxWithQty / $quantity;
+
+                                //==calculate discount
+                                $singleProductDiscountAmount = $singleQtyPrice - $singleQtyPriceAfterDiscount;
+                                if ($singleProductDiscountAmount > 0) {
+                                    $discount_percentage = round((($singleProductDiscountAmount * 100) / $singleQtyPrice), 2);
+                                }
+
+                                //==calculate vatrate percentage
+                                if ($singleQtyTax > 0) {
+                                    $vatrate_percentage = round(number_format((($singleQtyTax * 100) / $singleQtyPrice), 2));
+                                }
+
+                                $price_ex_vat = $singleQtyPrice;
+                                $price_inc_vat = $singleQtyPrice + $singleQtyTax;
+
+
+                                $orderProduct['entity_type'] = 'product';
+                                $orderProduct['product_id'] = $orderLine['duell_product_id'];
+                                $orderProduct['price_ex_vat'] = $price_ex_vat;
+                                $orderProduct['price_inc_vat'] = $price_inc_vat;
+                                $orderProduct['quantity'] = $quantity;
+                                $orderProduct['vatrate_percent'] = $vatrate_percentage;
+                                $orderProduct['discount_percentage'] = $discount_percentage;
+                                $orderProduct['comments'] = '';
+
+                                $orderProduct['wc_product_id'] = $orderLine['product_id'];
+                                $orderProduct['name'] = $orderLine['name'];
+                                $orderProduct['sku'] = $orderLine['sku'];
+                                $orderProduct['category_id'] = $orderLine['category_id'];
+                                $orderProduct['category_name'] = $orderLine['category_name'];
+                                $orderProduct['duell_category_id'] = $orderLine['duell_category_id'];
+
+                                $orderProductData[] = $orderProduct;
+                            }
+
+
+                            if (!empty($orderProductData)) {
+                                $prepareOrderData[] = array('order_data' => $orderData, 'product_data' => $orderProductData);
+                            }
+                        }
+
+
+
+                        unset($orderData);
+                        unset($orderProductData);
+                    }
+
+                    write_log($prepareOrderData);
+
+                    die;
+
+
+                    ini_set('memory_limit', '-1');
+                    ini_set('max_execution_time', 0);
+                    ini_set('default_socket_timeout', 500000);
+
+
+
+
+                    $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+                    $apiData['department'] = $duellStockDepartmentToken;
+
+
+                    $wsdata = callDuell('all/product/stock', 'get', $apiData, 'json', $type);
+
+                    if ($wsdata['status'] === true) {
+
+                        $totalRecord = $wsdata['total_count'];
+
+                        if ($totalRecord > 0) {
+
+                            if (isset($wsdata['data']) && !empty($wsdata['data'])) {
+                                $allData = $wsdata['data'];
+                            }
+                        }
+
+                        $response['status'] = TRUE;
+                        $response['message'] = 'success';
+
+                        return $response;
+                    } else {
+                        $text_error = $wsdata['message'];
+                        write_log('OrderSync() - Error:: ' . $text_error);
+                        $response['message'] = $text_error;
+                    }
+                }
+//==end put code
+            } else {
+                $text_error = 'Integration status is not active.';
+                write_log('OrderSync() - ' . $text_error);
+                $response['message'] = $text_error;
+                return $response;
+            }
+        } catch (Exception $e) {
+
+            $text_error = 'Catch exception throw:: ' . $e->getMessage();
+
+            write_log('OrderSync() - ' . $text_error);
+            if ($type != 'manual') {
+                duellMailAlert($text_error, 422);
+            }
+        }
+        return $response;
+
+        /* $completed_order_query = new WP_Query(
+          array(
+          'orderby' => 'ID',
+          'order' => 'ASC',
+          'numberposts' => -1,
+          'posts_per_page' => -1,
+          'post_type' => 'shop_order',
+          'post_status' => 'wc-completed',
+          'meta_query' => array(
+          'relation' => 'OR',
+          array(
+          'key' => '_duell_order_id',
+          'compare' => 'NOT EXISTS'
+          ),
+          array(
+          'key' => '_duell_order_id',
+          'compare' => 'IS NULL'
+          ),
+          array(
+          'key' => '_duell_order_id',
+          'value' => '',
+          'compare' => '='
+          )
+          )
+          )
+          );
+
+
+          echo write_log($completed_order_query->request);
+
+
+          if ($completed_order_query->have_posts()) {
+
+          while ($completed_order_query->have_posts()) {
+          $completed_order_query->the_post();
+          write_log('POST ID::' . $completed_order_query->post->ID);
+          }
+          wp_reset_postdata();
+          } */
+    }
+
     function wc_subtract_stock_after_order_placed($order_id) {
 
         if (!$order_id) {
@@ -139,7 +421,7 @@ class Duellintegration {
 
 
 
-                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken);
                 $apiData['department_token'] = $duellStockDepartmentToken;
                 $apiData['product_data'] = $duellProductData;
 
@@ -166,30 +448,6 @@ class Duellintegration {
         }
     }
 
-    function manual_run_custom_cron() {
-
-        $reponse = array();
-        if (!empty($_POST['param'])) {
-
-            $cronName = strtolower($_POST['param']);
-            $actionRes = apply_filters('duell_cron_' . $cronName, 'manual');
-
-            $response['response'] = $actionRes['message'];
-        } else {
-            $response['response'] = "You didn't send the param";
-        }
-
-
-        header("Content-Type: application/json");
-        echo json_encode($response);
-
-        exit();
-    }
-
-    public function sync_orders($type = "manual") {
-        $this->wc_subtract_stock_after_order_placed(151);
-    }
-
     public function sync_stocks($type = "manual") {
 
         $type = strtolower($type);
@@ -212,7 +470,7 @@ class Duellintegration {
                     write_log('StockSync() - ' . $text_error);
                     $response['message'] = $text_error;
 
-                    $error_message = 'StockSync() - ' . $text_error;
+
 
                     if ($type != 'manual') {
 //duellMailAlert($text_error, 422);
@@ -227,7 +485,7 @@ class Duellintegration {
                     write_log('StockSync() - ' . $text_error);
                     $response['message'] = $text_error;
 
-                    $error_message = 'StockSync() - ' . $text_error;
+
 
                     if ($type != 'manual') {
 //duellMailAlert($text_error, 422);
@@ -242,7 +500,7 @@ class Duellintegration {
                     write_log('StockSync() - ' . $text_error);
                     $response['message'] = $text_error;
 
-                    $error_message = 'StockSync() - ' . $text_error;
+
 
                     if ($type != 'manual') {
 //duellMailAlert($text_error, 422);
@@ -276,7 +534,7 @@ class Duellintegration {
                             $allData = $wsdata['data'];
 
                             $this->processProductStockData($allData);
-                            sleep(10);
+                            sleep(1);
 
                             $nextCounter = $start + $limit;
 
@@ -303,7 +561,7 @@ class Duellintegration {
                                     }
                                     $nextCounter = $nextCounter + $limit;
                                 }
-                                sleep(10);
+                                sleep(1);
                             }
                         }
                     }
@@ -397,7 +655,7 @@ class Duellintegration {
                     write_log('PricesSync() - ' . $text_error);
                     $response['message'] = $text_error;
 
-                    $error_message = 'PricesSync() - ' . $text_error;
+
 
                     if ($type != 'manual') {
 //duellMailAlert($text_error, 422);
@@ -412,7 +670,7 @@ class Duellintegration {
                     write_log('PricesSync() - ' . $text_error);
                     $response['message'] = $text_error;
 
-                    $error_message = 'PricesSync() - ' . $text_error;
+
 
                     if ($type != 'manual') {
 //duellMailAlert($text_error, 422);
@@ -450,7 +708,7 @@ class Duellintegration {
                             $allData = $wsdata['products'];
 
                             $this->processProductPriceData($allData);
-                            sleep(10);
+                            sleep(1);
 
                             $nextCounter = $start + $limit;
 
@@ -479,7 +737,7 @@ class Duellintegration {
                                     }
                                     $nextCounter = $nextCounter + $limit;
                                 }
-                                sleep(10);
+                                sleep(1);
                             }
                         }
 
@@ -575,7 +833,7 @@ class Duellintegration {
                     write_log('ProductSync() - ' . $text_error);
                     $response['message'] = $text_error;
 
-                    $error_message = 'ProductSync() - ' . $text_error;
+
 
                     if ($type != 'manual') {
 //duellMailAlert($text_error, 422);
@@ -590,7 +848,7 @@ class Duellintegration {
                     write_log('ProductSync() - ' . $text_error);
                     $response['message'] = $text_error;
 
-                    $error_message = 'ProductSync() - ' . $text_error;
+
 
                     if ($type != 'manual') {
 //duellMailAlert($text_error, 422);
@@ -628,7 +886,7 @@ class Duellintegration {
                             $allData = $wsdata['products'];
 
                             $this->processProductData($allData);
-                            sleep(10);
+                            sleep(1);
 
                             $nextCounter = $start + $limit;
 
@@ -657,7 +915,7 @@ class Duellintegration {
                                     }
                                     $nextCounter = $nextCounter + $limit;
                                 }
-                                sleep(10);
+                                sleep(1);
                             }
                         }
 
@@ -698,6 +956,8 @@ class Duellintegration {
 
 //https://wordpress.stackexchange.com/questions/137501/how-to-add-product-in-woocommerce-with-php-code
         $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
+
+        $updateExistingProduct = get_option('duellintegration_update_existing_product');
 
         if (!empty($data)) {
             foreach ($data as $product) {
@@ -750,17 +1010,20 @@ class Duellintegration {
 
                     $post_id = wp_insert_post($post, false);
                 } else {
+
                     //Update post
-                    $post_id = $productExists;
 
-                    $post = array(
-                        'ID' => $post_id,
-                        'post_title' => $productName,
-                        'post_content' => $description
-                    );
+                    if ($updateExistingProduct == '1' || $updateExistingProduct == 1) {
+                        $post_id = $productExists;
 
+                        $post = array(
+                            'ID' => $post_id,
+                            'post_title' => $productName,
+                            'post_content' => $description
+                        );
 
-                    wp_update_post($post);
+                        wp_update_post($post);
+                    }
                 }
                 if ($post_id) {
                     //$attach_id = get_post_meta($product->parent_id, "_thumbnail_id", true);
@@ -801,14 +1064,18 @@ class Duellintegration {
                         update_post_meta($post_id, '_visibility', 'visible');
 
                         update_post_meta($post_id, '_featured', "no");
+
+                        update_post_meta($post_id, '_duell_product_id', $duellProductId);
                     }
 
-                    wp_set_object_terms($post_id, $categoryName, 'product_cat');
+                    if (is_null($productExists) || ($updateExistingProduct == '1' || $updateExistingProduct == 1)) {
+                        wp_set_object_terms($post_id, $categoryName, 'product_cat');
 
-                    update_post_meta($post_id, '_barcode', $barcode);
-                    update_post_meta($post_id, '_regular_price', $finalPrice);
-                    update_post_meta($post_id, '_sale_price', $finalPrice);
-                    update_post_meta($post_id, '_price', $finalPrice);
+                        update_post_meta($post_id, '_barcode', $barcode);
+                        update_post_meta($post_id, '_regular_price', $finalPrice);
+                        update_post_meta($post_id, '_sale_price', $finalPrice);
+                        update_post_meta($post_id, '_price', $finalPrice);
+                    }
                 }
             }
         }
@@ -858,17 +1125,6 @@ class Duellintegration {
     function setup_install() {
 
         global $wpdb;
-        $table = $wpdb->prefix . "duell_sync_logs";
-        $structure = "CREATE TABLE IF NOT EXISTS $table (
-        id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-        type VARCHAR(80) NOT NULL,
-        type_id bigint(20) NOT NULL,
-        duell_ref bigint(20) NOT NULL,
-        created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-        PRIMARY KEY (id)
-        );";
-        $wpdb->query($structure);
-
 
         if (!wp_next_scheduled('duell_cron_sync_products')) {
             wp_schedule_event(time(), 'every3hours', 'duell_cron_sync_products');
@@ -919,11 +1175,6 @@ class Duellintegration {
         wp_clear_scheduled_hook('duell_cron_sync_orders');
 
 
-        $table = $wpdb->prefix . "duell_sync_logs";
-
-// drop a table
-        $wpdb->query("DROP TABLE IF EXISTS $table");
-
 // for site options in Multisite
         delete_option('duellintegration_client_number');
         delete_option('duellintegration_client_token');
@@ -932,6 +1183,7 @@ class Duellintegration {
         delete_option('duellintegration_api_access_token');
         delete_option('duellintegration_log_status');
         delete_option('duellintegration_integration_status');
+        delete_option('duellintegration_update_existing_product');
 
         delete_option('duellintegration_product_lastsync');
         delete_option('duellintegration_order_lastsync');
@@ -970,14 +1222,14 @@ class Duellintegration {
           menu_slug: Unique name used as a slug for submenu item.
           function: A callback function used to display page content.
          */
-        add_submenu_page($slug, 'Settings', 'Settings', 'administrator', $slug, $callback);
+        /* add_submenu_page($slug, 'Settings', 'Settings', 'administrator', $slug, $callback);
 
-        $log_page_title = 'Logs';
-        $log_menu_title = 'Logs';
-        $log_slug = 'duell-integration-logs';
-        $log_callback = array($this, 'plugin_settings_page_content');
+          $log_page_title = 'Logs';
+          $log_menu_title = 'Logs';
+          $log_slug = 'duell-integration-logs';
+          $log_callback = array($this, 'plugin_settings_page_content');
 
-        add_submenu_page($slug, $log_page_title, $log_menu_title, $capability, $log_slug, $log_callback);
+          add_submenu_page($slug, $log_page_title, $log_menu_title, $capability, $log_slug, $log_callback); */
     }
 
     public function update_notice() {
@@ -1130,7 +1382,8 @@ class Duellintegration {
                 'class' => "",
                 'default' => '',
                 'helper' => '',
-                'supplimental' => ''
+                'supplimental' => '',
+                'validation' => true
             ),
             array(
                 'uid' => 'duellintegration_client_token',
@@ -1141,7 +1394,8 @@ class Duellintegration {
                 'class' => "regular-text ltr",
                 'default' => '',
                 'helper' => '',
-                'supplimental' => ''
+                'supplimental' => '',
+                'validation' => true
             ),
             array(
                 'uid' => 'duellintegration_stock_department_token',
@@ -1152,7 +1406,8 @@ class Duellintegration {
                 'supplimental' => 'Enter the department token from which stock will fetch',
                 'class' => "regular-text ltr",
                 'default' => '',
-                'helper' => ''
+                'helper' => '',
+                'validation' => true
             ),
             array(
                 'uid' => 'duellintegration_order_department_token',
@@ -1163,9 +1418,24 @@ class Duellintegration {
                 'supplimental' => 'Enter the department token from in which order will save',
                 'class' => "regular-text ltr",
                 'default' => '',
-                'helper' => ''
+                'helper' => '',
+                'validation' => true
             ),
             array(
+                'uid' => 'duellintegration_update_existing_product',
+                'label' => __('Update Existing Products', 'duellintegration'),
+                'section' => 'duell_configuration_section',
+                'type' => 'select',
+                'options' => array(
+                    '1' => 'Yes',
+                    '0' => 'No'
+                ),
+                'default' => 0,
+                'class' => "",
+                'helper' => '',
+                'supplimental' => '',
+                'validation' => false
+            ), array(
                 'uid' => 'duellintegration_log_status',
                 'label' => __('Enable Log', 'duellintegration'),
                 'section' => 'duell_configuration_section',
@@ -1177,7 +1447,8 @@ class Duellintegration {
                 'default' => 0,
                 'class' => "",
                 'helper' => '',
-                'supplimental' => ''
+                'supplimental' => '',
+                'validation' => false
             ),
             array(
                 'uid' => 'duellintegration_integration_status',
@@ -1191,12 +1462,17 @@ class Duellintegration {
                 'default' => 1,
                 'class' => "",
                 'helper' => '',
-                'supplimental' => ''
+                'supplimental' => '',
+                'validation' => false
             )
         );
         foreach ($fields as $field) {
             add_settings_field($field['uid'], $field['label'], array($this, 'field_callback'), 'duellintegration', $field['section'], $field);
-            register_setting('duellintegration', $field['uid'], array($this, 'plugin_validate_' . $field['uid'] . '_option'));
+            if ($field['validation']) {
+                register_setting('duellintegration', $field['uid'], array($this, 'plugin_validate_' . $field['uid'] . '_option'));
+            } else {
+                register_setting('duellintegration', $field['uid']);
+            }
         }
     }
 
@@ -1260,17 +1536,7 @@ class Duellintegration {
         }
     }
 
-    public function plugin_validate_duellintegration_integration_status_option($input) {
-        return sanitize_text_field($input);
-    }
-
-    public function plugin_validate_duellintegration_log_status_option($input) {
-        return sanitize_text_field($input);
-    }
-
     function plugin_validate_duellintegration_client_number_option($input) {
-
-
 
         if (is_null($input) || $input == '' || !is_numeric($input) || strlen($input) != 6) {
             $input = get_option('duellintegration_client_number');
@@ -1282,7 +1548,6 @@ class Duellintegration {
 
     function plugin_validate_duellintegration_client_token_option($input) {
 
-
         if (is_null($input) || $input == '') {
             $input = get_option('duellintegration_client_token');
             add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in client token!', 'error');
@@ -1293,7 +1558,6 @@ class Duellintegration {
 
     function plugin_validate_duellintegration_stock_department_token_option($input) {
 
-
         if (is_null($input) || $input == '') {
             $input = get_option('duellintegration_stock_department_token');
             add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in stock department token!', 'error');
@@ -1303,7 +1567,6 @@ class Duellintegration {
     }
 
     function plugin_validate_duellintegration_order_department_token_option($input) {
-
 
         if (is_null($input) || $input == '') {
             $input = get_option('duellintegration_order_department_token');
