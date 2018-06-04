@@ -193,7 +193,7 @@ class Duellintegration {
 
                             $orderData['comments'] = $orderDetailData['note'];
                             $orderData['reference_comment'] = '';
-                            $orderData['reference_order_number'] = $orderDetailData['order_number'];
+                            $orderData['reference_order_number'] = $orderId; //$orderDetailData['order_number'];
                             $orderData['round_off_amount'] = 0;
 
 
