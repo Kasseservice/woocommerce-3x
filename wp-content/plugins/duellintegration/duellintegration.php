@@ -293,6 +293,47 @@ class Duellintegration {
 
 
                             if (!empty($orderProductData)) {
+
+                                if ($orderDetailData['total_shipping'] > 0) {
+                                    $orderlineId = -9999999;
+
+                                    $shippingProductId = get_option('duellintegration_shipping_product_id');
+                                    $shippingProductCategoryId = get_option('duellintegration_shipping_category_id');
+
+                                    $shipping_vatrate_percent = 0.00;
+                                    $shipping_price_ex_vat = $orderDetailData['total_shipping'];
+                                    $shipping_price_inc_vat = $orderDetailData['total_shipping'] + $orderDetailData['shipping_tax'];
+
+                                    if ($orderDetailData['shipping_tax'] > 0) {
+                                        $shipping_vatrate_percent = round(number_format((($orderDetailData['shipping_tax'] * 100) / $shipping_price_ex_vat), 2));
+                                    }
+
+                                    if ($shippingProductCategoryId <= 0 || $shippingProductCategoryId == '' || is_null($shippingProductCategoryId)) {
+                                        $notSyncCategoryData[$orderlineId] = array('category_name' => 'SHIPPING');
+                                        $notSyncCategoryOrderData[$orderlineId][] = array('order_id' => $orderId, 'orderline_id' => $orderlineId);
+                                        $notSyncCategoryProductData[$orderlineId][] = $orderlineId;
+                                    }
+
+                                    if (is_null($shippingProductId) || $shippingProductId == '' || $shippingProductId <= 0) {
+                                        $notSyncProductData[$orderlineId] = array('product_name' => 'SHIPPING', 'product_number' => 'SHIPPING', 'price_inc_vat' => $shipping_price_inc_vat, 'vatrate_percent' => $shipping_vatrate_percent, 'category_id' => $shippingProductCategoryId);
+                                        $notSyncProductOrderData[$orderlineId][] = array('order_id' => $orderId, 'orderline_id' => $orderlineId);
+                                    }
+
+
+                                    $orderProduct['entity_type'] = 'product';
+                                    $orderProduct['product_id'] = $shippingProductId;
+                                    $orderProduct['price_ex_vat'] = $shipping_price_ex_vat;
+                                    $orderProduct['price_inc_vat'] = $shipping_price_inc_vat;
+                                    $orderProduct['quantity'] = 1;
+                                    $orderProduct['vatrate_percent'] = $shipping_vatrate_percent;
+                                    $orderProduct['discount_percentage'] = 0.00;
+                                    $orderProduct['comments'] = '';
+
+
+                                    $orderProductData[$orderlineId] = $orderProduct;
+                                }
+
+
                                 $prepareOrderData[$orderId] = array('order_data' => $orderData, 'product_data' => $orderProductData);
                             }
                         }
@@ -441,8 +482,9 @@ class Duellintegration {
                                     }
                                 }
                                 if ($duellCategoryId == 0) {
-                                    $categoryNewData = array(
-                                        'category_name' => $categoryRowData['category_name'],
+                                    $categoryNewData = array();
+
+                                    $categoryNewData[] = array('category_name' => $categoryRowData['category_name'],
                                         'category_type' => 'product'
                                     );
 
@@ -462,7 +504,11 @@ class Duellintegration {
 
                                 if ($duellCategoryId > 0) {
                                     $newCategoriesDuellId[$catId] = $duellCategoryId;
-                                    update_term_meta($catId, '_duell_category_id', $duellCategoryId);
+                                    if ($categoryRowData['category_name'] == 'SHIPPING') {
+                                        update_option('duellintegration_shipping_category_id', $duellCategoryId);
+                                    } else {
+                                        update_term_meta($catId, '_duell_category_id', $duellCategoryId);
+                                    }
                                 }
                             }
 
@@ -541,9 +587,10 @@ class Duellintegration {
                                     }
                                 }
                                 if ($duellProductId == 0) {
-                                    $productNewData = $productRowData;
+                                    $productNewData = array();
+                                    $productNewData[] = $productRowData;
 
-                                    $productSaveData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'product_data' => $categoryNewData);
+                                    $productSaveData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'product_data' => $productNewData);
 
                                     $wsdata = callDuell('product/save', 'post', $productSaveData, 'json', $type);
 
@@ -559,7 +606,11 @@ class Duellintegration {
 
                                 if ($duellProductId > 0) {
                                     $newProductsDuellId[$productId] = $duellProductId;
-                                    update_post_meta($productId, '_duell_product_id', $duellProductId);
+                                    if ($productRowData['product_number'] == 'SHIPPING') {
+                                        update_option('duellintegration_shipping_product_id', $duellProductId);
+                                    } else {
+                                        update_post_meta($productId, '_duell_product_id', $duellProductId);
+                                    }
                                 }
                             }
 
@@ -1537,6 +1588,9 @@ class Duellintegration {
         delete_option('duellintegration_product_lastsync');
         delete_option('duellintegration_order_lastsync');
         delete_option('duellintegration_prices_lastsync');
+
+        delete_option('duellintegration_shipping_product_id');
+        delete_option('duellintegration_shipping_category_id');
     }
 
     function create_plugin_settings_page() {
