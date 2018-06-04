@@ -170,6 +170,8 @@ class Duellintegration {
                 $notSyncCustomerData = array();
                 $notSyncCustomerOrderData = array();
 
+                $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
+                $woocommerce_calc_taxes = get_option('woocommerce_calc_taxes');
 
                 if (!empty($fetchNonSyncedOrders)) {
                     foreach ($fetchNonSyncedOrders as $postId) {
@@ -237,33 +239,61 @@ class Duellintegration {
 
                                 $singleQtyPriceAfterDiscount = $orderLine['price'];
 
-                                //==original cost
-                                $subtotalWithQty = $orderLine['subtotal'];
-                                $subtotalTaxWithQty = $orderLine['subtotal_tax'];
+                                if ($woocommerce_calc_taxes == 'yes' && $woocommerce_prices_include_tax == 'yes') {
+                                    $vatrate_percent = $orderLine['item_tax_rate'];
+                                    $vatrateMultiplier = 1 + ($vatrate_percent / 100);
 
-                                $singleQtyPrice = $subtotalWithQty / $quantity;
-                                $singleQtyTax = $subtotalTaxWithQty / $quantity;
+                                    //==original cost
+                                    $subtotalWithQty = $orderLine['subtotal'];
+                                    $subtotalTaxWithQty = $orderLine['subtotal_tax'];
 
-                                //==total cost after discount
-                                $totalWithQty = $orderLine['subtotal'];
-                                $totalTaxWithQty = $orderLine['subtotal_tax'];
+                                    $singleQtyPrice = $subtotalWithQty / $quantity;
+                                    $singleQtyTax = $subtotalTaxWithQty / $quantity;
 
-                                $singleTotalQtyPrice = $totalWithQty / $quantity;
-                                $singleTotalQtyTax = $totalTaxWithQty / $quantity;
+                                    //==total cost after discount
+                                    $totalWithQty = $orderLine['total'];
+                                    $totalTaxWithQty = $orderLine['total_tax'];
 
-                                //==calculate discount
-                                $singleProductDiscountAmount = $singleQtyPrice - $singleQtyPriceAfterDiscount;
-                                if ($singleProductDiscountAmount > 0) {
-                                    $discount_percentage = round((($singleProductDiscountAmount * 100) / $singleQtyPrice), 2);
+                                    $singleTotalQtyPrice = $totalWithQty / $quantity;
+                                    $singleTotalQtyTax = $totalTaxWithQty / $quantity;
+
+                                    //==calculate discount
+                                    $singleProductDiscountAmount = $singleQtyPrice - $singleQtyPriceAfterDiscount;
+                                    if ($singleProductDiscountAmount > 0) {
+                                        $discount_percentage = round((($singleProductDiscountAmount * 100) / $singleQtyPrice), 2);
+                                    }
+
+                                    $price_ex_vat = number_format($singleQtyPrice / $vatrateMultiplier, 2);
+                                    $price_inc_vat = $singleQtyPrice;
+                                } else {
+                                    //==original cost
+                                    $subtotalWithQty = $orderLine['subtotal'];
+                                    $subtotalTaxWithQty = $orderLine['subtotal_tax'];
+
+                                    $singleQtyPrice = $subtotalWithQty / $quantity;
+                                    $singleQtyTax = $subtotalTaxWithQty / $quantity;
+
+                                    //==total cost after discount
+                                    $totalWithQty = $orderLine['total'];
+                                    $totalTaxWithQty = $orderLine['total_tax'];
+
+                                    $singleTotalQtyPrice = $totalWithQty / $quantity;
+                                    $singleTotalQtyTax = $totalTaxWithQty / $quantity;
+
+                                    //==calculate discount
+                                    $singleProductDiscountAmount = $singleQtyPrice - $singleQtyPriceAfterDiscount;
+                                    if ($singleProductDiscountAmount > 0) {
+                                        $discount_percentage = round((($singleProductDiscountAmount * 100) / $singleQtyPrice), 2);
+                                    }
+
+                                    //==calculate vatrate percentage
+                                    if ($singleQtyTax > 0) {
+                                        $vatrate_percent = round(number_format((($singleQtyTax * 100) / $singleQtyPrice), 2));
+                                    }
+
+                                    $price_ex_vat = $singleQtyPrice;
+                                    $price_inc_vat = $singleQtyPrice + $singleQtyTax;
                                 }
-
-                                //==calculate vatrate percentage
-                                if ($singleQtyTax > 0) {
-                                    $vatrate_percent = round(number_format((($singleQtyTax * 100) / $singleQtyPrice), 2));
-                                }
-
-                                $price_ex_vat = $singleQtyPrice;
-                                $price_inc_vat = $singleQtyPrice + $singleQtyTax;
 
 
                                 $orderProduct['entity_type'] = 'product';

@@ -37,6 +37,7 @@ if (!function_exists('getWooCommerceOrderProductsById')) {
 // Get the decimal precession
         $dp = (isset($filter['dp'])) ? intval($filter['dp']) : 2;
 
+        $_tax = new WC_Tax();
         $order = wc_get_order($id); //getting order Object
         $order_data = array(
             'id' => $order->get_id(),
@@ -47,10 +48,16 @@ if (!function_exists('getWooCommerceOrderProductsById')) {
             $product = $item->get_product();
             $product_id = null;
             $product_sku = null;
+            $item_tax_rate = 0;
 // Check if the product exists.
             if (is_object($product)) {
                 $product_id = $product->get_id();
                 $product_sku = $product->get_sku();
+
+                $taxes = $_tax->get_rates($product->get_tax_class());
+                $rates = array_shift($taxes);
+                //Take only the item rate and round it.
+                $item_tax_rate = round(array_shift($rates));
             }
             $order_data['line_items'][] = array(
                 'id' => $item_id,
@@ -59,6 +66,7 @@ if (!function_exists('getWooCommerceOrderProductsById')) {
                 'total' => wc_format_decimal($order->get_line_total($item, false, false), $dp),
                 'total_tax' => wc_format_decimal($item['line_tax'], $dp),
                 'price' => wc_format_decimal($order->get_item_total($item, false, false), $dp),
+                'item_tax_rate' => $item_tax_rate,
                 'quantity' => wc_stock_amount($item['qty']),
                 'tax_class' => (!empty($item['tax_class']) ) ? $item['tax_class'] : null,
                 'name' => $item['name'],
@@ -88,6 +96,7 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
 // Get the decimal precession
         $dp = (isset($filter['dp'])) ? intval($filter['dp']) : 2;
 
+        $_tax = new WC_Tax();
         $order = wc_get_order($id); //getting order Object
 
         $duell_customer_id = get_post_meta($order->get_id(), '_duell_customer_id', true);
@@ -164,6 +173,7 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
             $category_id = 0;
             $category_name = null;
             $duell_category_id = 0;
+            $item_tax_rate = 0;
 // Check if the product exists.
             if (is_object($product)) {
                 $product_id = $product->get_id();
@@ -176,6 +186,11 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
                     $category_name = $terms[0]->name;
                     $duell_category_id = get_term_meta($category_id, '_duell_category_id', true);
                 }
+
+                $taxes = $_tax->get_rates($product->get_tax_class());
+                $rates = array_shift($taxes);
+                //Take only the item rate and round it.
+                $item_tax_rate = round(array_shift($rates));
             }
             $order_data['line_items'][] = array(
                 'id' => $item_id,
@@ -183,6 +198,7 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
                 'subtotal_tax' => wc_format_decimal($item['line_subtotal_tax'], $dp),
                 'total' => wc_format_decimal($order->get_line_total($item, false, false), $dp),
                 'total_tax' => wc_format_decimal($item['line_tax'], $dp),
+                'item_tax_rate' => $item_tax_rate,
                 'price' => wc_format_decimal($order->get_item_total($item, false, false), $dp),
                 'quantity' => wc_stock_amount($item['qty']),
                 'tax_class' => (!empty($item['tax_class']) ) ? $item['tax_class'] : null,
