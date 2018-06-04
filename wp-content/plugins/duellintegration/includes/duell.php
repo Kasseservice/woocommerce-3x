@@ -89,6 +89,9 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
         $dp = (isset($filter['dp'])) ? intval($filter['dp']) : 2;
 
         $order = wc_get_order($id); //getting order Object
+
+        $duell_customer_id = get_post_meta($order->get_id(), '_duell_customer_id', true);
+
         $order_data = array(
             'id' => $order->get_id(),
             'order_number' => $order->get_order_number(),
@@ -125,7 +128,8 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
                 'country' => $order->get_billing_country(),
                 'formated_country' => !empty($order->get_billing_country()) ? WC()->countries->countries[$order->get_billing_country()] : '', //human readable formated country name
                 'email' => $order->get_billing_email(),
-                'phone' => $order->get_billing_phone()
+                'phone' => $order->get_billing_phone(),
+                'duell_customer_id' => !is_null($duell_customer_id) && (int) $duell_customer_id > 0 ? (int) $duell_customer_id : 0
             ),
             'shipping_address' => array(
                 'first_name' => $order->get_shipping_first_name(),
