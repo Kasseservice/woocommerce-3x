@@ -1514,7 +1514,7 @@ class Duellintegration {
     function plugin_init_setup() {
         $this->check_plugin_dependencies();
 
-        defined('DUELL_API_ENDPOINT') OR define('DUELL_API_ENDPOINT', 'http://panteon-kasse.devhost/api/v1/');
+        defined('DUELL_API_ENDPOINT') OR define('DUELL_API_ENDPOINT', 'http://duell.kasseservice.no/api/v1/');
         defined('DUELL_LOGIN_ACTION') OR define('DUELL_LOGIN_ACTION', 'getaccesstokens');
         defined('DUELL_KEY_NAME') OR define('DUELL_KEY_NAME', 'duell_integration');
         defined('DUELL_TOTAL_LOGIN_ATTEMPT') OR define('DUELL_TOTAL_LOGIN_ATTEMPT', 3);
