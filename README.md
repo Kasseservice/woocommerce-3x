@@ -1,6 +1,3 @@
-# woocommerce-3x
-Integrate DUELL POS with your Woocommerce 3.x webshop
-
 Duell woocommerce-3x module
 =====================
 
@@ -26,7 +23,7 @@ Download the plugin files.
 
 ### Step 3: Install and Active Plugin
 
-* Goto > Wp-admin > Plugins > 
+* Goto > Wp-admin > Plugins
 * Find "Duell Integration" 
 * Click on "Active" link to activate the plugin.
 
