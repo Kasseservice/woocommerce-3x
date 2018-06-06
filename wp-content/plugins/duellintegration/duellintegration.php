@@ -45,6 +45,10 @@ class Duellintegration {
         // After order placed hook
         add_action('woocommerce_thankyou', array($this, 'wc_subtract_stock_after_order_placed'), 111, 1);
         add_action('woocommerce_process_shop_order_meta', array($this, 'wc_subtract_stock_after_order_placed'), 10, 2);
+        // Display Duell order number in woocommerce order list and make it searchable
+        add_filter('manage_edit-shop_order_columns', array($this, 'duell_shop_order_column'), 12, 1);
+        add_action('manage_shop_order_posts_custom_column', array($this, 'duell_order_list_column_content'), 10, 2);
+        add_filter('woocommerce_shop_order_search_fields', array($this, 'duell_search_fields'), 10, 1);
         // For simple products add cost price:
         // Add Field
         //add_action('woocommerce_product_options_general_product_data', array($this, 'wc_add_product_cost_price_field'));
@@ -73,8 +77,8 @@ class Duellintegration {
             wp_schedule_event(time(), 'every30minutes', 'duell_cron_sync_stocks');
         }
         if (!wp_next_scheduled('duell_cron_sync_orders')) {
-//$next3am = ( date('Hi') >= '0300' ) ? strtotime('+1day 3am') : strtotime('3am');
-//wp_schedule_single_event($next3am, 'duell_cron_sync_orders');
+            //$next3am = ( date('Hi') >= '0300' ) ? strtotime('+1day 3am') : strtotime('3am');
+            //wp_schedule_single_event($next3am, 'duell_cron_sync_orders');
             wp_schedule_event(strtotime('03:00:00'), 'daily3am', 'duell_cron_sync_orders');
         }
     }
@@ -90,7 +94,6 @@ class Duellintegration {
         wp_clear_scheduled_hook('duell_cron_sync_prices');
         wp_clear_scheduled_hook('duell_cron_sync_stocks');
         wp_clear_scheduled_hook('duell_cron_sync_orders');
-
         // Remove site wise option
         delete_option('duellintegration_client_number');
         delete_option('duellintegration_client_token');
@@ -106,6 +109,10 @@ class Duellintegration {
         delete_option('duellintegration_shipping_product_id');
         delete_option('duellintegration_shipping_category_id');
     }
+
+    /*
+     * Intialize plugin intial value and check dependencies
+     */
 
     function plugin_init_setup() {
         $this->check_plugin_dependencies();
@@ -133,13 +140,25 @@ class Duellintegration {
         return true;
     }
 
+    /*
+     * Display error notice in admin if woocommerce is not active
+     */
+
     function wc_dependency_warning_notice() {
         echo '<div class="error"><p><strong>' . sprintf(esc_html__('Duell integration requires WooCommerce to be installed and active. You can download %s here.', 'duellintegration'), '<a href="https://woocommerce.com/" target="_blank">WooCommerce</a>') . '</strong></p></div>';
     }
 
+    /*
+     * Display error notice in admin if cURL module is not installed
+     */
+
     function curl_dependency_warning_notice() {
         echo '<div class="error"><p><strong>' . sprintf(esc_html__('Duell integration requires cURL to be installed on your server', 'duellintegration')) . '</strong></p></div>';
     }
+
+    /*
+     * Setup plugin menu
+     */
 
     function create_plugin_settings_page() {
         $capability = 'manage_options';
@@ -158,15 +177,27 @@ class Duellintegration {
           add_submenu_page($slug, $log_page_title, $log_menu_title, $capability, $log_slug, $log_callback); */
     }
 
+    /*
+     * Display success message after plugin setting update
+     */
+
     public function update_notice() {
         if (isset($_GET['settings-updated'])) {
             add_settings_error('duellintegration_messages', 'duellintegration_message', __('Settings Saved', 'duellintegration'), 'updated');
         }
     }
 
+    /*
+     * Display error message if any validation throw
+     */
+
     public function error_notice() {
         settings_errors('duellintegration_messages');
     }
+
+    /*
+     * Display plugin setup page
+     */
 
     public function plugin_settings_page_content() {
         if (!current_user_can('manage_options')) {
@@ -222,6 +253,10 @@ class Duellintegration {
         <?php
     }
 
+    /*
+     * Plugin javascript
+     */
+
     public function setup_action_javascript() {
         ?><script>
                     (function ($) {
@@ -270,17 +305,29 @@ class Duellintegration {
         <?php
     }
 
+    /*
+     * Plugin section setup
+     */
+
     public function setup_sections() {
         add_settings_section('duell_configuration_section', 'Configure', array($this, 'section_callback'), 'duellintegration');
     }
 
+    /*
+     * Plugin section callback
+     */
+
     public function section_callback($arguments) {
         switch ($arguments['id']) {
             case 'duell_configuration_section':
-                echo 'Note: Make sure you have API access in Duell manager section.';
+                echo '<b>Note:</b> Make sure you have API access in Duell manager section.';
                 break;
         }
     }
+
+    /*
+     * Plugin fields setup
+     */
 
     public function setup_fields() {
         $fields = array(
@@ -310,7 +357,7 @@ class Duellintegration {
             ),
             array(
                 'uid' => 'duellintegration_stock_department_token',
-                'label' => __('Stock Department Token', 'duellintegration'),
+                'label' => __('Stock Department', 'duellintegration'),
                 'section' => 'duell_configuration_section',
                 'type' => 'text',
                 'placeholder' => __('Stock Department Token', 'duellintegration'),
@@ -322,11 +369,11 @@ class Duellintegration {
             ),
             array(
                 'uid' => 'duellintegration_order_department_token',
-                'label' => __('Order Department Token', 'duellintegration'),
+                'label' => __('Order Department', 'duellintegration'),
                 'section' => 'duell_configuration_section',
                 'type' => 'text',
                 'placeholder' => __('Order Department Token', 'duellintegration'),
-                'supplimental' => 'Enter the department token from in which order will save',
+                'supplimental' => 'Enter the department token in which order will save',
                 'class' => "regular-text ltr",
                 'default' => '',
                 'helper' => '',
@@ -386,6 +433,10 @@ class Duellintegration {
             }
         }
     }
+
+    /*
+     * Plugin fields register, callback and render
+     */
 
     public function field_callback($arguments) {
         $value = get_option($arguments['uid']);
@@ -476,6 +527,37 @@ class Duellintegration {
 
     public function enqueue_admin_scripts_and_styles() {
         wp_enqueue_style('duellintegration_admin', plugin_dir_url(__FILE__) . '/assets/css/duellintegration.css');
+    }
+
+    // Add new column after total in woocommerce order list
+    function duell_shop_order_column($columns) {
+        $new_columns = array();
+        foreach ($columns as $column_name => $column_info) {
+            $new_columns[$column_name] = $column_info;
+            if ('order_total' === $column_name) {
+                $new_columns['order_duell_order_number'] = __('Duell #', 'duellintegration');
+            }
+        }
+        return $new_columns;
+    }
+
+    // Adding data for duell order column
+    function duell_order_list_column_content($column, $post_id) {
+        $duell_order_number = get_post_meta($post_id, '_duell_order_number', true);
+        if (empty($duell_order_number)) {
+            $duell_order_number = '';
+        }
+        switch ($column) {
+            case 'order_duell_order_number' :
+                echo '<span>' . $duell_order_number . '</span>'; // display the data
+                break;
+        }
+    }
+
+    // Add duell order number searchable in woocommerce list
+    function duell_search_fields($meta_keys) {
+        $meta_keys[] = '_duell_order_number';
+        return $meta_keys;
     }
 
     function cron_intervals_schedule($schedules) {
