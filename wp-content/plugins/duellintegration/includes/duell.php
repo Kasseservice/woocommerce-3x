@@ -24,36 +24,29 @@ if (!function_exists('validateDateTime')) {
     }
 
 }
-
-
 if (!function_exists('getWooCommerceOrderProductsById')) {
 
-
-//to get full order details
     function getWooCommerceOrderProductsById($id, $fields = null, $filter = array()) {
-
         if (is_wp_error($id))
             return $id;
-// Get the decimal precession
+        // Get the decimal precession
         $dp = (isset($filter['dp'])) ? intval($filter['dp']) : 2;
-
         $_tax = new WC_Tax();
         $order = wc_get_order($id); //getting order Object
         $order_data = array(
             'id' => $order->get_id(),
             'order_number' => $order->get_order_number()
         );
-//getting all line items
+        //getting all line items
         foreach ($order->get_items() as $item_id => $item) {
             $product = $item->get_product();
             $product_id = null;
             $product_sku = null;
             $item_tax_rate = 0;
-// Check if the product exists.
+            // Check if the product exists.
             if (is_object($product)) {
                 $product_id = $product->get_id();
                 $product_sku = $product->get_sku();
-
                 $taxes = $_tax->get_rates($product->get_tax_class());
                 $rates = array_shift($taxes);
                 //Take only the item rate and round it.
@@ -82,25 +75,16 @@ if (!function_exists('getWooCommerceOrderProductsById')) {
     }
 
 }
-
-//http://www.webhat.in/article/woocommerce-tutorial/how-to-get-order-details-by-order-id/
-//https://stackoverflow.com/questions/39401393/how-to-get-woocommerce-order-details
 if (!function_exists('getWooCommerceOrderDetailById')) {
 
-
-//to get full order details
     function getWooCommerceOrderDetailById($id, $fields = null, $filter = array()) {
-
         if (is_wp_error($id))
             return $id;
-// Get the decimal precession
+        // Get the decimal precession
         $dp = (isset($filter['dp'])) ? intval($filter['dp']) : 2;
-
         $_tax = new WC_Tax();
         $order = wc_get_order($id); //getting order Object
-
         $duell_customer_id = get_post_meta($order->get_id(), '_duell_customer_id', true);
-
         $order_data = array(
             'id' => $order->get_id(),
             'order_number' => $order->get_order_number(),
@@ -178,15 +162,12 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
             if (is_object($product)) {
                 $product_id = $product->get_id();
                 $product_sku = $product->get_sku();
-
                 $terms = get_the_terms($product_id, 'product_cat');
-
                 if (isset($terms[0])) {
                     $category_id = $terms[0]->term_id;
                     $category_name = $terms[0]->name;
                     $duell_category_id = get_term_meta($category_id, '_duell_category_id', true);
                 }
-
                 $taxes = $_tax->get_rates($product->get_tax_class());
                 $rates = array_shift($taxes);
                 //Take only the item rate and round it.
@@ -257,44 +238,28 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
     }
 
 }
-
 if (!function_exists('getWooCommerceProductBySku')) {
 
     function getWooCommerceProductBySku($sku) {
-
         global $wpdb;
-
         $product_id = $wpdb->get_var($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta WHERE meta_key='_sku' AND meta_value='%s' LIMIT 1", $sku));
-
         if ($product_id) {
             return $product_id;
         }
-
         return null;
     }
 
 }
-
 if (!function_exists('duellLoginApi')) {
 
     function duellLoginApi($action, $method = 'POST', $data = array(), $content_type = 'json', $type = 'manual') {
         try {
-
             $method = strtoupper($method);
-
             write_log('loginApi(' . $action . ') - Data: ' . json_encode($data));
-
             $url = DUELL_API_ENDPOINT . $action;
-
-
-
             $headers = array();
-
             $headers[] = 'Content-Type: application/x-www-form-urlencoded';
-
-
             $curl = curl_init();
-
             switch ($method) {
                 case "POST":
                     curl_setopt($curl, CURLOPT_POST, 1);
@@ -308,7 +273,6 @@ if (!function_exists('duellLoginApi')) {
                 case "PUT":
                     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "PUT");
                     curl_setopt($curl, CURLOPT_PUT, 1);
-
                     if (!empty($data)) {
                         $url = sprintf("%s?%s", $url, http_build_query($data));
                     }
@@ -318,26 +282,17 @@ if (!function_exists('duellLoginApi')) {
                         $url = sprintf("%s?%s", $url, http_build_query($data));
                     }
             }
-
-
-
             curl_setopt($curl, CURLOPT_URL, $url);
             curl_setopt($curl, CURLOPT_USERAGENT, "Duell Integration WP");
-
             curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-
             curl_setopt($curl, CURLOPT_FRESH_CONNECT, true);
             curl_setopt($curl, CURLOPT_FORBID_REUSE, true);
             curl_setopt($curl, CURLOPT_TIMEOUT, false);
             curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-
-
             $result = curl_exec($curl);
-
 //write_log('loginApi() - Result of : "' . $result . '"');
-
             if (!$result) {
                 $text_error = 'loginApi() - Curl Failed ' . curl_error($curl);
                 write_log($text_error . ' ' . curl_errno($curl));
@@ -346,24 +301,13 @@ if (!function_exists('duellLoginApi')) {
                 }
             }
             curl_close($curl);
-
-
-
-
-
             if ($content_type == 'json') {
                 $encoding = mb_detect_encoding($result);
-
                 if ($encoding == 'UTF-8') {
                     $result = preg_replace('/[^(\x20-\x7F)]*/', '', $result);
                 }
-
                 $res = json_decode($result, true);
-
-
-
                 if (empty($res)) {
-
                     $res['code'] = 100010;
                     $res['status'] = FALSE;
                     $res['token'] = '';
@@ -377,16 +321,12 @@ if (!function_exists('duellLoginApi')) {
                         if (isset($res['code']) && $res['code'] != '') {
                             $result_code = $res['code'];
                         }
-
                         $result_message = '';
                         if (isset($res['message']) && $res['message'] != '') {
                             $result_message = $res['message'];
                         }
-
                         $text_error = 'loginApi() - Result Failed - ' . $result_message;
-
                         write_log('loginApi() - Result Failed ' . $result_code . ' ' . $result_message);
-
                         if ($type != 'manual') {
                             //duellMailAlert($text_error, $result_code);
                         }
@@ -398,9 +338,7 @@ if (!function_exists('duellLoginApi')) {
             $res['status'] = FALSE;
             $res['token'] = '';
             $res['message'] = $e->getMessage();
-
             $text_error = 'loginApi() - Error exception throw:: ' . $e->getMessage();
-
             write_log($text_error);
             if ($type != 'manual') {
                 duellMailAlert($text_error, 422);
@@ -416,7 +354,6 @@ if (!function_exists('duellLoginApi')) {
                 duellMailAlert($text_error, 422);
             }
         }
-
         return $res;
     }
 
@@ -424,18 +361,11 @@ if (!function_exists('duellLoginApi')) {
 if (!function_exists('callDuell')) {
 
     function callDuell($action, $method = 'POST', $data = array(), $content_type = 'json', $type = 'manual') {
-
         try {
-
             $requestedData = $data;
-
             $method = strtoupper($method);
-
             write_log('call(' . $action . ') - Data: ' . json_encode($data));
-
             $url = DUELL_API_ENDPOINT . $action;
-
-
             $token = '';
             if (get_option('duellintegration_api_access_token') != '') {
                 $token = get_option('duellintegration_api_access_token');
@@ -443,15 +373,12 @@ if (!function_exists('callDuell')) {
                 $token = $_COOKIE[DUELL_KEY_NAME];
                 update_option('duellintegration_api_access_token', $token);
             } else {
-
                 $loginAttempt = 1;
                 while ($loginAttempt <= DUELL_TOTAL_LOGIN_ATTEMPT) {
-
-//write_log('call(' . $action . ') - login Attempt: ' . $loginAttempt);
+                    //write_log('call(' . $action . ') - login Attempt: ' . $loginAttempt);
                     $tokenData = duellLoginApi(DUELL_LOGIN_ACTION, 'POST', $requestedData, $content_type, $type);
-
                     if ($tokenData['status'] == true) {
-//==save in session or cookie
+                        //==save in session or cookie
                         $token = $tokenData['token'];
                         if ($token != '') {
                             setcookie(DUELL_KEY_NAME, $token, time() + (86400 * 30), "/"); // 86400 = 1 day
@@ -462,7 +389,6 @@ if (!function_exists('callDuell')) {
                     $loginAttempt++;
                 }
             }
-
             if ($token == '') {
                 $res['code'] = 100010;
                 $res['status'] = FALSE;
@@ -474,20 +400,16 @@ if (!function_exists('callDuell')) {
                 }
                 return $res;
             }
-
             /* For testing purpose
               if (DUELL_CNT == 0) {
               $token = "";
               DUELL_CNT++;
               } */
-
             $headers = array();
             $headers[] = 'Content-Type: application/json';
             $headers[] = 'Content-Type: application/x-www-form-urlencoded';
             $headers[] = 'Authorization: Bearer ' . $token;
-
             $curl = curl_init();
-
             switch ($method) {
                 case "POST":
                     curl_setopt($curl, CURLOPT_POST, 1);
@@ -503,7 +425,6 @@ if (!function_exists('callDuell')) {
                     curl_setopt($curl, CURLOPT_PUT, 1);
 //$data = json_encode($data);
 //curl_setopt($curl, CURLOPT_POSTFIELDS,http_build_query($data));
-
                     if (!empty($data)) {
                         $url = sprintf("%s?%s", $url, http_build_query($data));
                     }
@@ -513,26 +434,18 @@ if (!function_exists('callDuell')) {
                         $url = sprintf("%s?%s", $url, http_build_query($data));
                     }
             }
-
             curl_setopt($curl, CURLOPT_URL, $url);
             curl_setopt($curl, CURLOPT_USERAGENT, "Duell Integration WP");
-
             curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-
             curl_setopt($curl, CURLOPT_FRESH_CONNECT, true);
             curl_setopt($curl, CURLOPT_FORBID_REUSE, true);
             curl_setopt($curl, CURLOPT_TIMEOUT, false);
             curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-
-
             $result = curl_exec($curl);
-
             write_log('call() - Result of : "' . $result . '"');
-
             if (!$result) {
-
                 $text_error = 'call() - Curl Failed ' . curl_error($curl);
                 write_log($text_error . ' ' . curl_errno($curl));
                 if ($type != 'manual') {
@@ -540,22 +453,13 @@ if (!function_exists('callDuell')) {
                 }
             }
             curl_close($curl);
-
-
-
-
-
             if ($content_type == 'json') {
                 $encoding = mb_detect_encoding($result);
-
                 if ($encoding == 'UTF-8') {
                     $result = preg_replace('/[^(\x20-\x7F)]*/', '', $result);
                 }
-
                 $res = json_decode($result, true);
-
                 if (empty($res)) {
-
                     $res['code'] = 100010;
                     $res['status'] = FALSE;
                     $res['message'] = 'Webservice is temporary unavailable. Please try again.';
@@ -568,19 +472,15 @@ if (!function_exists('callDuell')) {
                         if (isset($res['code']) && $res['code'] != '') {
                             $result_code = $res['code'];
                         }
-
                         $result_message = '';
                         if (isset($res['message']) && $res['message'] != '') {
                             $result_message = $res['message'];
                         }
-
                         write_log('call() - Result Failed ' . $result_code . ' ' . $result_message);
-
                         if ((int) $result_code == 401 || (int) $result_code == 403) {
 //==relogin
                             unset($_COOKIE[DUELL_KEY_NAME]);
                             update_option('duellintegration_api_access_token', '');
-
                             return callDuell($action, $method, $requestedData, $content_type, $type);
                         } else {
                             if ($type != 'manual') {
@@ -607,7 +507,6 @@ if (!function_exists('callDuell')) {
                 duellMailAlert('call(' . $action . ') - Catch exception throw::  ' . $e->getMessage(), 100010);
             }
         }
-
         return $res;
     }
 
@@ -616,16 +515,12 @@ if (!function_exists('validateJsonDecode')) {
 
     function validateJsonDecode($data) {
         $data = (string) $data;
-
         $encoding = mb_detect_encoding($data);
-
         if ($encoding == 'UTF-8') {
             $data = preg_replace('/[^(\x20-\x7F)]*/', '', $data);
             $data = preg_replace('#\\\\x[0-9a-fA-F]{2,2}#', '', $data);
         }
-
         $data = json_decode($data);
-
         if (function_exists('json_last_error')) {
             switch (json_last_error()) {
                 case JSON_ERROR_NONE:
@@ -653,17 +548,14 @@ if (!function_exists('validateJsonDecode')) {
         } else {
             write_log('validateJsonDecode() - json_last_error PHP function does not exist');
         }
-
         return $data;
     }
 
 }
-
 if (!function_exists('duellMailAlert')) {
 
     function duellMailAlert($error_message = '', $error_code = '') {
-
-        //implement main functions which sends email to site admin from option table
+        //implement mail functions which sends email to site admin from option table
     }
 
 }
