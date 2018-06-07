@@ -70,7 +70,7 @@ From your WordPress administration panel go to `Plugins > Installed Plugins` and
 
 Very first step is to synchronize products from Duell. Plugin check `product number` of Duell exists in the Woocommerce product at `SKU` field. If product number already exists, plugin only update if `Update existing product` flag is enabled. If product is not exists, plugin add products in `Pending` status with `OutOfStock` status & `0` stock. Products need to manually `published` to use for sell.
 
-Check `Prices` point regarding product price.
+Check `[Prices](#prices)` point regarding product price.
 
 ### Stocks
 
