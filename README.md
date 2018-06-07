@@ -40,7 +40,7 @@ Download the plugin files.
 * **Stock Department:** Copy the department token in which stock need to manage.
 * **Order Department:** Copy the department token in which Woocommerce order save.
 * **Update existing products:** If flag is enabled, only update the existing product information
-* **Enable Log:** In case of enable, it will save all logs in wp-content folder with file name  "duell-YYYY-mm-dd.log"
+* **Enable Log:** In case of enable, it will save all logs in wp-content folder with file name  **`duell-YYYY-mm-dd.log`**
 * **Enable Sync:** If flag is enabled, only synced data with Duell
 
 ### Step 5: Setup cron job with CURL
@@ -68,13 +68,13 @@ From your WordPress administration panel go to **`Plugins > Installed Plugins`**
 
 ### Products
 
-Very first step is to synchronize products from Duell. Plugin check **`product number`** of Duell exists in the Woocommerce product at **`SKU`** field. If product number already exists, plugin only update if `Update existing product` flag is enabled. If product is not exists, plugin add products in **`Pending`** status with **`OutOfStock`** status & **`0`** stock. Products need to manually **`published`** to use for sell.
+Very first step is to synchronize products from Duell. Plugin check **`product number`** of Duell exists in the Woocommerce product at **`SKU`** field. If product number already exists, plugin only update if **`Update existing product`** flag is enabled. If product is not exists, plugin add products in **`Pending`** status with **`OutOfStock`** status & **`0`** stock. Products need to manually **`published`** to use for sell.
 
 Check **[Prices](#prices)** point regarding product price.
 
 ### Stocks
 
-Second step is to synchronize latest stocks from Duell. If stock greater than **`0`** then plugin update stock status to `InStock` and **`Stock`** to latest stock number.
+Second step is to synchronize latest stocks from Duell. If stock greater than **`0`** then plugin update stock status to **`InStock`** and **`Stock`** to latest stock number.
 
 ### Prices
 
@@ -101,7 +101,7 @@ Plugin subtract stocks from Duell when new order placed from Webshop or Admin si
 ### Orders
 
 * Orders are synchronize once in a day(preferred 3 AM). You can change time as per your requirement. 
-* Plugin add extra column (Duell #) in Woocommerce admin order list page which shows Duell order number. You can search Duell order number from search box.
+* Plugin add extra column (**Duell #**) in Woocommerce admin order list page which shows Duell order number. You can search Duell order number from search box.
 * Plugin add **`SHIPPING`** price as a product in Duell at time order synchronize.
 
 
@@ -116,7 +116,7 @@ There are many cron job related plugins avaialble to manage cron jobs.
 * [WP Crontrol](https://wordpress.org/plugins/wp-crontrol/)
 * [WP-Cron Control](https://wordpress.org/plugins/wp-cron-control/)
 
-Any of the above tools should provide you proper cron scheduling.
+Any of the above tools should provide proper way  to manage cron scheduling.
 
 LICENSE
 -------
