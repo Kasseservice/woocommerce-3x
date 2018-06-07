@@ -81,7 +81,7 @@ On WordPress administration panel
     * Product to **`Pending`** status 
     * Stock to **`OutOfStock`** 
     * Stock value to **`0`** 
-* Products needs to manually **`published`** to enable it for sale.
+* Products need to manually **`published`** to enable it for sale.
 
 Check below **[Prices](#prices)** section point for product price.
 
