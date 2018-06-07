@@ -77,8 +77,8 @@ On WordPress administration panel
 
 * Product sync needs to be done as a first step. The plugin checks if **`product number`** of Duell exists in the Woocommerce product at **`SKU`** field. 
 * If product number already exists, plugin only update product information if **`Update existing product`** flag is enabled. 
-* If product is not exists, plugin adds new products to 
-    * **`Pending`** status 
+* If product is not exists, plugin adds new products 
+    * Product to **`Pending`** status 
     * Stock to **`OutOfStock`** 
     * Stock value to **`0`** 
 * Products needs to manually **`published`** to enable it for sale.
