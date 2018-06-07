@@ -90,11 +90,11 @@ Synchronize products with latest prices. Plugin manage price based on Woocommerc
 Plugin subtract stocks from Duell when new order placed from Webshop or Admin side.   
 
 
-* Webshop order implemented hook. You can change the hook as per your requirement.
+* Webshop order hook. You can change the hook as per your requirement.
 
   **`woocommerce_thankyou`**
   
-* Admin order implemented hooks
+* Admin order hook
 
   **`woocommerce_process_shop_order_meta`**
 
