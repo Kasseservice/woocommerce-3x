@@ -1,17 +1,17 @@
 Duell woocommerce-3x module
 =====================
 
-The purpose of this plugin is to manage & sync products, stocks and orders at both wocommerce 3.x webshop and Duell. 
+The purpose of this plugin is to manage & sync products, stocks and orders at both Woocommerce 3.x webshop and Duell. 
 
 Prerequisites
 -------------
 
-This module requires Wordpress 4.x,  Wocommerce 3.x.
+This module requires Wordpress 4.x,  Woocommerce 3.x.
 
 Dependencies
 -------------
 
-This module requires Wocommerce 3.x plugin installed and active.
+This module requires Woocommerce 3.x plugin installed and active.
 
 Installation
 ------------
@@ -38,10 +38,10 @@ Download the plugin files.
 * **Client Number:** Required for API authentication
 * **Client Token:** Required for API authentication
 * **Stock Department:** Copy the department token in which stock need to manage.
-* **Order Department:** Copy the department token in which wocommerce order save.
-* **Update existing products:** If this flag is enabled, only update the existing product information
-* **Enable Log:** In case of enable, it will save all logs in wp-content with file name  "duell-YYYY-mm-dd.log"
-* **Enable Sync:** If this flag is enabled, only synced products, stocks, prices and orders
+* **Order Department:** Copy the department token in which Woocommerce order save.
+* **Update existing products:** If flag is enabled, only update the existing product information
+* **Enable Log:** In case of enable, it will save all logs in wp-content folder with file name  "duell-YYYY-mm-dd.log"
+* **Enable Sync:** If flag is enabled, only synced data with Duell
 
 ### Step 5: Setup cron job with CURL
 
@@ -68,11 +68,13 @@ From your WordPress administration panel go to `Plugins > Installed Plugins` and
 
 ### Products
 
-Very first step is to synchronize products from Duell. Plugin check `product number` of Duell exists in the Woocommerce product `SKU`. If product number already exists, plugin only update if `Update existing product` flag is enabled. If product is not exists, plugin add products in `Pending` status with `OutOfStock` status with `0` stock. Product need to manually `published` to use for sell.
+Very first step is to synchronize products from Duell. Plugin check `product number` of Duell exists in the Woocommerce product at `SKU` field. If product number already exists, plugin only update if `Update existing product` flag is enabled. If product is not exists, plugin add products in `Pending` status with `OutOfStock` status & `0` stock. Products need to manually `published` to use for sell.
+
+Check `Prices` point regarding product price.
 
 ### Stocks
 
-Second step is to synchronize latest stocks from Duell. If stock greater than `0` then plugin update stock status to `InStock` and latest stock number.
+Second step is to synchronize latest stocks from Duell. If stock greater than `0` then plugin update stock status to `InStock` and `Stock` to latest stock number.
 
 ### Prices
 
