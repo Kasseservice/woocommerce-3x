@@ -8,6 +8,10 @@ Prerequisites
 
 This module requires Wordpress 4.x,  Wocommerce 3.x.
 
+Dependencies
+-------------
+
+This module requires Wocommerce 3.x plugin installed and active.
 
 Installation
 ------------
@@ -58,9 +62,14 @@ Download the plugin files.
   * 3 * * * /usr/bin/curl http://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
   ```
  
+Working
+-------
+
+
+
 LICENSE
 -------
 
-The module is open source, and made available via an 'GNU GENERAL PUBLIC LICENSE', which basically means you can do whatever you like with it as long as you retain the copyright notice and license description - see [LICENSE] for more information.
+The module is open source, and made available via an 'GNU GENERAL PUBLIC LICENSE', which basically means you can do whatever you like with it as long as you retain the copyright notice and license description - see[master/LICENSE] for more information.
 
 
