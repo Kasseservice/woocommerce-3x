@@ -64,24 +64,24 @@ Download the plugin files.
  
 ## How to Use
 -------
-From your WordPress administration panel go to `Plugins > Installed Plugins` and scroll down until you find `Duell Integration`. You'll need to activate it first. Then click on `Settings` to configure it as mentioned in `Step 4`.
+From your WordPress administration panel go to **`Plugins > Installed Plugins`** and scroll down until you find **`Duell Integration`**. You'll need to activate it first. Then click on **`Settings`** to configure it as mentioned in **[Step 4](#step-4-setup-duell-credential)**.
 
 ### Products
 
-Very first step is to synchronize products from Duell. Plugin check `product number` of Duell exists in the Woocommerce product at `SKU` field. If product number already exists, plugin only update if `Update existing product` flag is enabled. If product is not exists, plugin add products in `Pending` status with `OutOfStock` status & `0` stock. Products need to manually `published` to use for sell.
+Very first step is to synchronize products from Duell. Plugin check **`product number`** of Duell exists in the Woocommerce product at **`SKU`** field. If product number already exists, plugin only update if `Update existing product` flag is enabled. If product is not exists, plugin add products in **`Pending`** status with **`OutOfStock`** status & **`0`** stock. Products need to manually **`published`** to use for sell.
 
-Check [Prices](#prices) point regarding product price.
+Check **[Prices](#prices)** point regarding product price.
 
 ### Stocks
 
-Second step is to synchronize latest stocks from Duell. If stock greater than `0` then plugin update stock status to `InStock` and `Stock` to latest stock number.
+Second step is to synchronize latest stocks from Duell. If stock greater than **`0`** then plugin update stock status to `InStock` and **`Stock`** to latest stock number.
 
 ### Prices
 
 Synchronize products with latest prices. Plugin manage price based on Woocommerce setting `Prices entered with tax`.
   
-  * `Yes, I will enter prices inclusive of tax`: Plugin add price inclusive tax.
-  * `No, I will enter prices exclusive of tax`: Plugin add price exclusive tax. Woocommerce add tax based on flag `Enable tax rates and calculations` and configured tax. If tax flag enabled then Woocommerce apply tax based on setting in `Tax` tab.
+  * **`Yes, I will enter prices inclusive of tax`:** Plugin add price inclusive tax.
+  * **`No, I will enter prices exclusive of tax`:** Plugin add price exclusive tax. Woocommerce add tax based on flag **`Enable tax rates and calculations`** and configured tax. If tax flag enabled then Woocommerce apply tax based on setting in **`Tax`** tab.
 
 **NOTE:** Once product sync, it will not update product price if you change Woocommerce settings.
 
@@ -92,17 +92,17 @@ Plugin subtract stocks from Duell when new order placed from Webshop or Admin si
 
 * Webshop order implemented hook. You can change the hook as per your requirement.
 
-  `woocommerce_thankyou`
+  **`woocommerce_thankyou`**
   
 * Admin order implemented hooks
 
-  `woocommerce_process_shop_order_meta`
+  **`woocommerce_process_shop_order_meta`**
 
 ### Orders
 
 * Orders are synchronize once in a day(preferred 3 AM). You can change time as per your requirement. 
 * Plugin add extra column (Duell #) in Woocommerce admin order list page which shows Duell order number. You can search Duell order number from search box.
-* Plugin add `SHIPPING` price as a product in Duell at time synchronize.
+* Plugin add **`SHIPPING`** price as a product in Duell at time order synchronize.
 
 
 Recommended Tools
