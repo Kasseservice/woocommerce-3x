@@ -68,11 +68,11 @@ From your WordPress administration panel go to `Plugins > Installed Plugins` and
 
 ### Products
 
-Very first step is to synchronize products from Duell. Plugin check `product number` of Duell exists in the Woocommerce product `SKU`. If product number already exists, plugin only update if `Update existing product` flag is enabled. If product is not exists, plugin add products in `Pending` status with `OutOfStock` status with `0` Quantitiy. 
+Very first step is to synchronize products from Duell. Plugin check `product number` of Duell exists in the Woocommerce product `SKU`. If product number already exists, plugin only update if `Update existing product` flag is enabled. If product is not exists, plugin add products in `Pending` status with `OutOfStock` status with `0` stock. Product need to manually `published` to use for sell.
 
 ### Stocks
 
-Second step is to synchronize stocks from Duell. 
+Second step is to synchronize latest stocks from Duell. If stock greater than `0` then plugin update stock status to `InStock` and latest stock number.
 
 ### Prices
 
@@ -80,7 +80,8 @@ Synchronize products with latest prices. Plugin manage price based on Woocommerc
   
   * `Yes, I will enter prices inclusive of tax`: Plugin add price inclusive tax.
   * `No, I will enter prices exclusive of tax`: Plugin add price exclusive tax. Woocommerce add tax based on flag `Enable tax rates and calculations` and configured tax. If tax flag enabled then Woocommerce apply tax based on setting in `Tax` tab.
-  
+
+**NOTE:** Once product sync, it will not update product price if you change Woocommerce settings.
 
 ### Subtract stocks from Duell
 
