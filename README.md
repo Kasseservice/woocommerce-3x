@@ -18,14 +18,15 @@ Installation
 
 ### Step 1: Download the Plugin
 
-Download the plugin files.
+Download the plugin files. Download from [here](https://github.com/Kasseservice/woocommerce-3x/)
 
 ### Step 2: Upload the Plugin
 
-* Please take backup of database. 
-* Upload plugin to the wordpress root directory > wp-content > plugins 
+* Upload plugin thru ftp to the Wordpress root directory > wp-content > plugins 
 
 ### Step 3: Install and Active Plugin
+
+On Wordpress Admin
 
 * Goto > Wp-admin > Plugins
 * Find "Duell Integration" 
@@ -33,7 +34,7 @@ Download the plugin files.
 
 ### Step 4: Setup duell credential
 
-**Note:** Make sure you have API related access in Duell application. Find the below details in duell manager area > API-oppsett 
+**Note:** Need API related access available in Duell application. Find the below details in Duell Manager area > API-oppsett 
 
 * **Client Number:** Required for API authentication
 * **Client Token:** Required for API authentication
@@ -64,45 +65,57 @@ Download the plugin files.
  
 ## How to Use
 -------
-From your WordPress administration panel go to **`Plugins > Installed Plugins`** and scroll down until you find **`Duell Integration`**. You'll need to activate it first. Then click on **`Settings`** to configure it as mentioned in **[Step 4](#step-4-setup-duell-credential)**.
+On WordPress administration panel 
 
-### Products
+* Goto **`Plugins > Installed Plugins`** and scroll down until to find **`Duell Integration`**.
+* Activate plugin first. 
+* Click on **`Settings`** to configure it as mentioned in **[Step 4](#step-4-setup-duell-credential)**.
 
-Very first step is to synchronize products from Duell. Plugin check **`product number`** of Duell exists in the Woocommerce product at **`SKU`** field. If product number already exists, plugin only update if **`Update existing product`** flag is enabled. If product is not exists, plugin add products in **`Pending`** status with **`OutOfStock`** status & **`0`** stock. Products need to manually **`published`** to use for sell.
+### Products Sync
 
-Check **[Prices](#prices)** point regarding product price.
+#### Product Sync Workflow
+
+* Product sync needs to be done as a first step. The plugin checks if **`product number`** of Duell exists in the Woocommerce product at **`SKU`** field. 
+* If product number already exists, plugin only update product information if **`Update existing product`** flag is enabled. 
+* If product is not exists, plugin adds new products to 
+    * **`Pending`** status 
+    * Stock to **`OutOfStock`** 
+    * Stock value to **`0`** 
+* Products needs to manually **`published`** to enable it for sale.
+
+Check below **[Prices](#prices)** section point for product price.
 
 ### Stocks
 
-Second step is to synchronize latest stocks from Duell. If stock greater than **`0`** then plugin update stock status to **`InStock`** and **`Stock`** to latest stock number.
+Second step is to synchronize latest stocks from Duell. If stock greater than **`0`** then plugin updates stock status to **`InStock`** and stock value to **`Stock`** to latest stock number.
 
 ### Prices
 
-Synchronize products with latest prices. Plugin manage price based on Woocommerce setting `Prices entered with tax`.
+Synchronize products with latest prices. Plugin manages price based on Woocommerce setting `Prices entered with tax`.
   
-  * **`Yes, I will enter prices inclusive of tax`:** Plugin add price inclusive tax.
-  * **`No, I will enter prices exclusive of tax`:** Plugin add price exclusive tax. Woocommerce add tax based on flag **`Enable tax rates and calculations`** and configured tax. If tax flag enabled then Woocommerce apply tax based on setting in **`Tax`** tab.
+  * **`Yes, I will enter prices inclusive of tax`:** Adds price inclusive tax.
+  * **`No, I will enter prices exclusive of tax`:** Adds price exclusive tax. Woocommerce add tax based on flag **`Enable tax rates and calculations`** and configured tax. If tax flag enabled then Woocommerce apply tax based on setting in **`Tax`** tab.
 
-**NOTE:** Once product sync, it will not update product price if you change Woocommerce settings.
+**NOTE:** Once product sync and tthen if there is change in change Woocommerce settings, the product price will not get updated.  In such case, the price needs to manually change for individual products.
 
 ### Subtract stocks from Duell
 
-Plugin subtract stocks from Duell when new order placed from Webshop or Admin side.   
+Whenever a new order placed from Webshop or Admin side, plugin subtracts stocks from Duell. 
 
 
-* Webshop order hook. You can change the hook as per your requirement.
+* Webshop order hook. The Hook can be changed as per user requirement.
 
   **`woocommerce_thankyou`**
   
-* Admin order hook
+* Admin order hook. This hook cannot be changed.
 
   **`woocommerce_process_shop_order_meta`**
 
 ### Orders
 
-* Orders are synchronize once in a day(preferred 3 AM). You can change time as per your requirement. 
-* Plugin add extra column (**Duell #**) in Woocommerce admin order list page which shows Duell order number. You can search Duell order number from search box.
-* Plugin add **`SHIPPING`** price as a product in Duell at time order synchronize.
+* Orders are synchronize once in a day (can be set by user; preferred 3 AM). 
+* Plugin adds an extra column (**Duell Order No.**) in Woocommerce admin order list page. User can search Duell order number from search box.
+* Plugin adds **`SHIPPING`** price as a product in Duell on order sync.
 
 
 Recommended Tools
@@ -110,7 +123,7 @@ Recommended Tools
 
 ### Cron Tools
 
-There are many cron job related plugins avaialble to manage cron jobs.
+There are many cron job related plugins available to manage cron jobs.
 
 * [Advanced Cron Manager](https://wordpress.org/plugins/advanced-cron-manager/)
 * [WP Crontrol](https://wordpress.org/plugins/wp-crontrol/)
