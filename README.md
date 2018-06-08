@@ -44,7 +44,9 @@ On Wordpress Admin
 * **Enable Log:** In case of enable, it will save all logs in wp-content folder with file name  **`duell-YYYY-mm-dd.log`**
 * **Enable Sync:** If flag is enabled, only synced data with Duell
 
-### Step 5: Setup cron job with CURL
+### Step 5: Setup cron job manually 
+
+If Wordpress auto cron not work, than user have to setup cron job command manually to the server. [Here](https://developer.wordpress.org/plugins/cron/hooking-into-the-system-task-scheduler/)
 
 * Every 15 minutes
 
