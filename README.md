@@ -48,16 +48,18 @@ On Wordpress Admin
 
 If Wordpress auto cron not work, than user have to setup cron job command manually to the server. [Here](https://developer.wordpress.org/plugins/cron/hooking-into-the-system-task-scheduler/)
 
+Cron job can be set either with cURL or wget.
+
 * Every 15 minutes
 
   ```bash
-  */15 * * * * /usr/bin/curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
+  */15 * * * * curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
   ```
   
 * Every 3 hours
 
   ```bash
-  * */3 * * * /usr/bin/curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
+  * */3 * * * curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
   ```
  
 ## How to Use
