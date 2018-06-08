@@ -51,7 +51,7 @@ If Wordpress auto cron not work, than user have to setup cron job command manual
 * Every 15 minutes
 
   ```bash
-  */30 * * * * /usr/bin/curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
+  */15 * * * * /usr/bin/curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
   ```
   
 * Every 3 hours
