@@ -46,21 +46,16 @@ On Wordpress Admin
 
 ### Step 5: Setup cron job with CURL
 
-* Every 30 minutes
+* Every 15 minutes
 
   ```bash
-  */30 * * * * /usr/bin/curl http://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
+  */30 * * * * /usr/bin/curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
   ```
   
 * Every 3 hours
 
   ```bash
-  * */3 * * * /usr/bin/curl http://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
-  ```
-* Every night 3am
-
-  ```bash
-  * 3 * * * /usr/bin/curl http://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
+  * */3 * * * /usr/bin/curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
   ```
  
 ## How to Use
