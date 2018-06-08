@@ -41,7 +41,7 @@ On Wordpress Admin
 * **Stock Department:** Copy the department token in which stock need to manage.
 * **Order Department:** Copy the department token in which Woocommerce order save.
 * **Update existing products:** If flag is enabled, only update the existing product information
-* **Enable Log:** In case of enable, it will save all logs in wp-content folder with file name  **`duell-YYYY-mm-dd.log`**
+* **Enable Log:** In case of enable, it will save all logs datewise inside wp-content > duell folder with file name  **`YYYY-mm-dd.log`**
 * **Enable Sync:** If flag is enabled, only synced data with Duell
 
 ### Step 5: Setup cron job manually 
