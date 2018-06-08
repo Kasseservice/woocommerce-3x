@@ -5,11 +5,21 @@ if (!function_exists('write_log')) {
     function write_log($log, $excludeCheck = false) {
         $duellLogStatus = get_option('duellintegration_log_status');
         if (($duellLogStatus == '1' || $duellLogStatus == 1) || $excludeCheck == true) {
-            error_log(PHP_EOL . PHP_EOL, 3, WP_CONTENT_DIR . '/duell-' . date('Y-m-d') . '.log');
+
+            $dirpath = WP_CONTENT_DIR . '/uploads/duell/';
+
+            if (!file_exists($dirpath)) {
+                mkdir($dirpath, 0755, true);
+            }
+
+            $logFileName = date('Y-m-d') . '.log';
+            $prefix = "[" . date('Y-m-d H:i:s') . "]";
+
+            error_log(PHP_EOL . PHP_EOL, 3, $dirpath . $logFileName);
             if (is_array($log) || is_object($log)) {
-                error_log(print_r($log, true), 3, WP_CONTENT_DIR . '/duell-' . date('Y-m-d') . '.log');
+                error_log($prefix . " " . print_r($log, true), 3, $dirpath . $logFileName);
             } else {
-                error_log($log, 3, WP_CONTENT_DIR . '/duell-' . date('Y-m-d') . '.log');
+                error_log($prefix . " " . $log, 3, $dirpath . $logFileName);
             }
         }
     }
