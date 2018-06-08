@@ -500,7 +500,7 @@ class Duellintegration {
 
     public function field_callback($arguments) {
         $value = get_option($arguments['uid']);
-        if (!$value) {
+        if (is_null($value)) {
             $value = $arguments['default'];
         }
         switch ($arguments['type']) {
@@ -570,25 +570,31 @@ class Duellintegration {
     }
 
     function plugin_validate_duellintegration_stock_department_token_option($input) {
-        if (is_null($input) || $input == '') {
-            $input = get_option('duellintegration_stock_department_token');
-            add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in stock department token!', 'error');
+        if (!is_null($input) && $input != '') {
+            if (strlen($input) <= 30) {
+                $input = get_option('duellintegration_stock_department_token');
+                add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in stock department token!', 'error');
+            }
         }
         return sanitize_text_field($input);
     }
 
     function plugin_validate_duellintegration_order_department_token_option($input) {
-        if (is_null($input) || $input == '') {
-            $input = get_option('duellintegration_order_department_token');
-            add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in order department token!', 'error');
+        if (!is_null($input) && $input != '') {
+            if (strlen($input) <= 30) {
+                $input = get_option('duellintegration_order_department_token');
+                add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in order department token!', 'error');
+            }
         }
         return sanitize_text_field($input);
     }
 
     function plugin_validate_duellintegration_order_start_from_option($input) {
-        if (is_null($input) || $input == '' || !is_numeric($input) || strlen($input) != 6) {
-            $input = get_option('duellintegration_order_start_from');
-            add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in order number!', 'error');
+        if (!is_null($input) && $input != '') {
+            if (!is_numeric($input)) {
+                $input = get_option('duellintegration_order_start_from');
+                add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in order number!', 'error');
+            }
         }
         return sanitize_text_field($input);
     }
@@ -658,7 +664,7 @@ class Duellintegration {
         exit();
     }
 
-    public function sync_orders($type = "manual") {
+    public function sync_orders($type = "") {
         global $wpdb;
         $type = strtolower($type);
         $response = array();
@@ -728,7 +734,7 @@ class Duellintegration {
                 $sql .= " LEFT JOIN wp_postmeta ON (wp_posts.ID = wp_postmeta.post_id AND wp_postmeta.meta_key = '_duell_order_id' ) ";
                 $sql .= " LEFT JOIN wp_postmeta AS mt1 ON ( wp_posts.ID = mt1.post_id ) ";
                 if ($lastSyncDate != '') {
-                    $sql .= " LEFT JOIN wp_postmeta as mt2 ON (wp_posts.ID = mt2.post_id AND mt2.meta_key = '_completed_date' ) ";
+                    //$sql .= " LEFT JOIN wp_postmeta as mt2 ON (wp_posts.ID = mt2.post_id AND mt2.meta_key = '_completed_date' ) ";
                 }
                 $sql .= " WHERE 1=1 ";
                 $sql .= " AND wp_posts.post_type = 'shop_order' AND wp_posts.post_status = '" . $duellOrderSyncStatus . "' AND wp_posts.ID >= " . $duellOrderStartFrom;
@@ -736,9 +742,10 @@ class Duellintegration {
                 $sql .= " wp_postmeta.post_id IS NULL OR ( mt1.meta_key = '_duell_order_id' AND mt1.meta_value IS NULL )  OR  ( mt1.meta_key = '_duell_order_id' AND mt1.meta_value = '' ) ";
                 $sql .= " ) ";
                 if ($lastSyncDate != '') {
-                    $sql .= " AND ( STR_TO_DATE(mt2.meta_value, '%Y-%m-%d %H:%i') >= '" . date('Y-m-d H:i', strtotime($lastSyncDate)) . "' ) ";
+                    //$sql .= " AND ( STR_TO_DATE(mt2.meta_value, '%Y-%m-%d %H:%i') >= '" . date('Y-m-d H:i', strtotime($lastSyncDate)) . "' ) ";
                 }
                 $sql .= " GROUP BY wp_posts.ID ORDER BY wp_posts.ID ASC";
+                write_log($sql);
                 $fetchNonSyncedOrders = $wpdb->get_results($sql, ARRAY_A);
                 $prepareOrderData = array();
                 $notSyncCategoryData = array();
@@ -748,6 +755,8 @@ class Duellintegration {
                 $notSyncProductOrderData = array();
                 $notSyncCustomerData = array();
                 $notSyncCustomerOrderData = array();
+
+                $excludeOrders = array();
                 $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
                 $woocommerce_calc_taxes = get_option('woocommerce_calc_taxes');
                 if (!empty($fetchNonSyncedOrders)) {
@@ -765,18 +774,35 @@ class Duellintegration {
                             $orderData['reference_comment'] = '';
                             $orderData['reference_order_number'] = $orderId; //$orderDetailData['order_number'];
                             $orderData['round_off_amount'] = 0;
+
                             $orderBillingInfo = $orderDetailData['billing_address'];
+
+                            $orderData['order_address']['address'] = $orderBillingInfo['address_1'] . ' ' . $orderBillingInfo['address_2'];
+                            $orderData['order_address']['city'] = $orderBillingInfo['city'];
+                            $orderData['order_address']['zip'] = $orderBillingInfo['postcode'];
+                            $orderData['order_address']['country'] = $orderBillingInfo['country'];
+
+
                             $orderData['customer_id'] = $orderBillingInfo['duell_customer_id'];
                             if ($orderData['customer_id'] == 0 || is_null($orderData['customer_id']) || $orderData['customer_id'] == '') {
-                                $customerKey = $orderBillingInfo['email'];
-                                if (!empty($orderBillingInfo['email'])) {
+
+                                $customerKey = '';
+
+                                $customerPhone = (int) str_replace(array(' ', '+', '#', '*'), '', $orderBillingInfo['phone']);
+
+                                if ($customerPhone != '' && strlen($customerPhone) >= 8) {
+                                    $customerKey = $customerPhone;
+                                }
+                                if ($customerKey == '' && !empty($orderBillingInfo['email'])) {
                                     $customerKey = $orderBillingInfo['email'];
-                                } elseif (!empty($orderBillingInfo['phone'])) {
-                                    $customerKey = (int) str_replace(array(' ', '+', '#', '*'), '', $orderBillingInfo['phone']);
+                                }
+
+                                if ($customerKey == '') {
+                                    $customerKey = 99999999;
                                 }
                                 $notSyncCustomerData[$customerKey] = array(
                                     'customer_name' => $orderBillingInfo['first_name'] . ' ' . $orderBillingInfo['last_name'],
-                                    'phone' => !empty($orderBillingInfo['phone']) ? (int) str_replace(array(' ', '+', '#', '*'), '', $orderBillingInfo['phone']) : '',
+                                    'phone' => strlen($customerPhone) >= 8 ? $customerPhone : '',
                                     'email' => $orderBillingInfo['email'],
                                     'primary_address' => $orderBillingInfo['address_1'],
                                     'primary_zip' => $orderBillingInfo['postcode'],
@@ -793,49 +819,31 @@ class Duellintegration {
                                 $quantity = $orderLine['quantity'];
                                 $tax_class = $orderLine['tax_class'];
                                 $singleQtyPriceAfterDiscount = $orderLine['price'];
-                                if ($woocommerce_calc_taxes == 'yes' && $woocommerce_prices_include_tax == 'yes') {
-                                    $vatrate_percent = $orderLine['item_tax_rate'];
-                                    $vatrateMultiplier = 1 + ($vatrate_percent / 100);
+                                $vatrate_percent = $orderLine['item_tax_rate'];
+
 //==original cost
-                                    $subtotalWithQty = $orderLine['subtotal'];
-                                    $subtotalTaxWithQty = $orderLine['subtotal_tax'];
-                                    $singleQtyPrice = $subtotalWithQty / $quantity;
-                                    $singleQtyTax = $subtotalTaxWithQty / $quantity;
+                                $subtotalWithQty = $orderLine['subtotal'];
+                                $subtotalTaxWithQty = $orderLine['subtotal_tax'];
+                                $singleQtyPrice = $subtotalWithQty / $quantity;
+                                $singleQtyTax = $subtotalTaxWithQty / $quantity;
 //==total cost after discount
-                                    $totalWithQty = $orderLine['total'];
-                                    $totalTaxWithQty = $orderLine['total_tax'];
-                                    $singleTotalQtyPrice = $totalWithQty / $quantity;
-                                    $singleTotalQtyTax = $totalTaxWithQty / $quantity;
+                                $totalWithQty = $orderLine['total'];
+                                $totalTaxWithQty = $orderLine['total_tax'];
+                                $singleTotalQtyPrice = $totalWithQty / $quantity;
+                                $singleTotalQtyTax = $totalTaxWithQty / $quantity;
 //==calculate discount
-                                    $singleProductDiscountAmount = $singleQtyPrice - $singleQtyPriceAfterDiscount;
-                                    if ($singleProductDiscountAmount > 0) {
-                                        $discount_percentage = round((($singleProductDiscountAmount * 100) / $singleQtyPrice), 2);
-                                    }
-                                    $price_ex_vat = number_format($singleQtyPrice / $vatrateMultiplier, 2);
-                                    $price_inc_vat = $singleQtyPrice;
-                                } else {
-//==original cost
-                                    $subtotalWithQty = $orderLine['subtotal'];
-                                    $subtotalTaxWithQty = $orderLine['subtotal_tax'];
-                                    $singleQtyPrice = $subtotalWithQty / $quantity;
-                                    $singleQtyTax = $subtotalTaxWithQty / $quantity;
-//==total cost after discount
-                                    $totalWithQty = $orderLine['total'];
-                                    $totalTaxWithQty = $orderLine['total_tax'];
-                                    $singleTotalQtyPrice = $totalWithQty / $quantity;
-                                    $singleTotalQtyTax = $totalTaxWithQty / $quantity;
-//==calculate discount
-                                    $singleProductDiscountAmount = $singleQtyPrice - $singleQtyPriceAfterDiscount;
-                                    if ($singleProductDiscountAmount > 0) {
-                                        $discount_percentage = round((($singleProductDiscountAmount * 100) / $singleQtyPrice), 2);
-                                    }
-//==calculate vatrate percentage
-                                    if ($singleQtyTax > 0) {
-                                        $vatrate_percent = round(number_format((($singleQtyTax * 100) / $singleQtyPrice), 2));
-                                    }
-                                    $price_ex_vat = $singleQtyPrice;
-                                    $price_inc_vat = $singleQtyPrice + $singleQtyTax;
+                                $singleProductDiscountAmount = $singleQtyPrice - $singleQtyPriceAfterDiscount;
+                                if ($singleProductDiscountAmount > 0) {
+                                    $discount_percentage = round((($singleProductDiscountAmount * 100) / $singleQtyPrice), 2);
                                 }
+//==calculate vatrate percentage
+
+                                if ($singleQtyTax > 0 && (is_null($vatrate_percent) || $vatrate_percent == '' || $vatrate_percent == 0)) {
+                                    $vatrate_percent = round(number_format((($singleQtyTax * 100) / $singleQtyPrice), 2));
+                                }
+                                $price_ex_vat = $singleQtyPrice;
+                                $price_inc_vat = $singleQtyPrice + $singleQtyTax;
+
                                 $orderProduct['entity_type'] = 'product';
                                 $orderProduct['product_id'] = $orderLine['duell_product_id'];
                                 $orderProduct['price_ex_vat'] = $price_ex_vat;
@@ -852,8 +860,12 @@ class Duellintegration {
                                     $notSyncCategoryProductData[$orderLine['category_id']][] = $orderLine['product_id'];
                                 }
                                 if ($orderLine['duell_product_id'] <= 0 || $orderLine['duell_product_id'] == '' || is_null($orderLine['duell_product_id'])) {
-                                    $notSyncProductData[$orderLine['product_id']] = array('product_name' => $orderLine['name'], 'product_number' => $orderLine['sku'], 'price_inc_vat' => $price_inc_vat, 'vatrate_percent' => $vatrate_percent, 'category_id' => $orderLine['duell_category_id']);
-                                    $notSyncProductOrderData[$orderLine['product_id']][] = array('order_id' => $orderId, 'orderline_id' => $orderlineId);
+                                    if ($orderLine['sku'] != '' && !is_null($orderLine['sku'])) {
+                                        $notSyncProductData[$orderLine['product_id']] = array('product_name' => $orderLine['name'], 'product_number' => $orderLine['sku'], 'price_inc_vat' => $price_inc_vat, 'vatrate_percent' => $vatrate_percent, 'category_id' => $orderLine['duell_category_id']);
+                                        $notSyncProductOrderData[$orderLine['product_id']][] = array('order_id' => $orderId, 'orderline_id' => $orderlineId);
+                                    } else {
+                                        $excludeOrders[] = $orderId;
+                                    }
                                 }
                                 $orderProductData[$orderlineId] = $orderProduct;
                             }
@@ -869,7 +881,8 @@ class Duellintegration {
                                         $shipping_vatrate_percent = round(number_format((($orderDetailData['shipping_tax'] * 100) / $shipping_price_ex_vat), 2));
                                     }
                                     if ($shippingProductCategoryId <= 0 || $shippingProductCategoryId == '' || is_null($shippingProductCategoryId)) {
-                                        $notSyncCategoryData[$orderlineId] = array('category_name' => 'SHIPPING');
+                                        $category_name = 'DIVERSE';
+                                        $notSyncCategoryData[$orderlineId] = array('category_name' => $category_name);
                                         $notSyncCategoryOrderData[$orderlineId][] = array('order_id' => $orderId, 'orderline_id' => $orderlineId);
                                         $notSyncCategoryProductData[$orderlineId][] = $orderlineId;
                                     }
@@ -887,7 +900,10 @@ class Duellintegration {
                                     $orderProduct['comments'] = '';
                                     $orderProductData[$orderlineId] = $orderProduct;
                                 }
-                                $prepareOrderData[$orderId] = array('order_data' => $orderData, 'product_data' => $orderProductData);
+
+                                if (!in_array($orderId, $excludeOrders)) {
+                                    $prepareOrderData[$orderId] = array('order_data' => $orderData, 'product_data' => $orderProductData);
+                                }
                             }
                         }
                         unset($orderData);
@@ -901,217 +917,262 @@ class Duellintegration {
                       write_log($notSyncProductData);
                       write_log($notSyncProductOrderData);
                       write_log($prepareOrderData); */
-                    $isCustomerSync = true;
-                    $newCustomersDuellId = array();
-                    try {
-                        if (!empty($notSyncCustomerData)) {
-                            $isCustomerSync = false;
-                            foreach ($notSyncCustomerData as $custEmail => $customerRowData) {
+
+
+                    write_log('Excluded orders: ' . json_encode($excludeOrders));
+                    if (!empty($prepareOrderData)) {
+
+
+                        $isCustomerSync = true;
+                        $newCustomersDuellId = array();
+                        try {
+                            if (!empty($notSyncCustomerData)) {
+                                $isCustomerSync = false;
+                                foreach ($notSyncCustomerData as $custEmail => $customerRowData) {
 ///
-                                $duellCustomerId = 0;
-                                $customerApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
-                                if (filter_var($custEmail, FILTER_VALIDATE_EMAIL)) {
-                                    $customerApiData['filter[customer_email]'] = $custEmail;
+                                    $duellCustomerId = 0;
+
+
+                                    if (strlen($customerRowData['phone']) >= 8) {
+                                        $customerApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
+                                        $customerApiData['filter[customer_phone]'] = $customerRowData['phone'];
+                                        $wsdata = callDuell('customer/list', 'get', $customerApiData, 'json', $type);
+                                        if (isset($wsdata['status']) && $wsdata['status'] === true) {
+                                            $totalRecord = $wsdata['total_count'];
+                                            if ($totalRecord > 0) {
+                                                if (isset($wsdata['customers']) && !empty($wsdata['customers'])) {
+                                                    $allData = $wsdata['customers'];
+                                                    if (isset($allData[0]['customer_id']) && (int) $allData[0]['customer_id'] > 0) {
+                                                        $duellCustomerId = $allData[0]['customer_id'];
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if ($duellCustomerId == 0 && $customerRowData['email'] != '' && filter_var($customerRowData['email'], FILTER_VALIDATE_EMAIL)) {
+
+                                        $customerApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
+                                        $customerApiData['filter[customer_email]'] = $customerRowData['email'];
+
+                                        $wsdata = callDuell('customer/list', 'get', $customerApiData, 'json', $type);
+                                        if (isset($wsdata['status']) && $wsdata['status'] === true) {
+                                            $totalRecord = $wsdata['total_count'];
+                                            if ($totalRecord > 0) {
+                                                if (isset($wsdata['customers']) && !empty($wsdata['customers'])) {
+                                                    $allData = $wsdata['customers'];
+                                                    if (isset($allData[0]['customer_id']) && (int) $allData[0]['customer_id'] > 0) {
+                                                        $duellCustomerId = $allData[0]['customer_id'];
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if ($duellCustomerId == 0) {
+                                        $customerApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
+                                        $customerApiData['filter[customer_phone]'] = 99999999;
+                                        $wsdata = callDuell('customer/list', 'get', $customerApiData, 'json', $type);
+                                        if (isset($wsdata['status']) && $wsdata['status'] === true) {
+                                            $totalRecord = $wsdata['total_count'];
+                                            if ($totalRecord > 0) {
+                                                if (isset($wsdata['customers']) && !empty($wsdata['customers'])) {
+                                                    $allData = $wsdata['customers'];
+                                                    if (isset($allData[0]['customer_id']) && (int) $allData[0]['customer_id'] > 0) {
+                                                        $duellCustomerId = $allData[0]['customer_id'];
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if ($duellCustomerId == 0) {
+                                        $customerSaveData = array(
+                                            'customer_name' => $customerRowData['customer_name'],
+                                            'phone' => strlen($customerRowData['phone']) >= 8 ? $customerRowData['phone'] : 99999999,
+                                            'email' => $customerRowData['email'],
+                                            'primary_address' => $customerRowData['primary_address'],
+                                            'primary_zip' => $customerRowData['primary_zip'],
+                                            'city' => $customerRowData['city']
+                                        );
+                                        $wsdata = callDuell('customer', 'put', $customerSaveData, 'json', $type);
+                                        if (isset($wsdata['status']) && $wsdata['status'] === true) {
+                                            if (isset($wsdata['customers']) && !empty($wsdata['customers'])) {
+                                                $duellCustomerId = $wsdata['customers'];
+                                            }
+                                        }
+                                    }
+                                    if ($duellCustomerId > 0) {
+                                        $newCustomersDuellId[$custEmail] = $duellCustomerId;
+                                    }
+                                }
+                                if (!empty($newCustomersDuellId)) {
+                                    foreach ($newCustomersDuellId as $custEmail => $duellCustomerId) {
+                                        if (isset($notSyncCustomerData[$custEmail]) && isset($notSyncCustomerOrderData[$custEmail])) {
+                                            $custOrderIds = $notSyncCustomerOrderData[$custEmail];
+                                            foreach ($custOrderIds as $custOrderData) {
+                                                $prepareOrderData[$custOrderData['order_id']]['order_data']['customer_id'] = $duellCustomerId;
+                                                update_post_meta($custOrderData['order_id'], '_duell_customer_id', $duellCustomerId);
+                                            }
+                                            unset($notSyncCustomerData[$custEmail]);
+                                            unset($notSyncCustomerOrderData[$custEmail]);
+                                        }
+                                    }
+                                }
+                                if (empty($notSyncCustomerData) && empty($notSyncCustomerOrderData)) {
+                                    $isCustomerSync = true;
                                 } else {
-                                    $customerApiData['filter[customer_phone]'] = $custEmail;
-                                }
-                                $wsdata = callDuell('customer/list', 'get', $customerApiData, 'json', $type);
-                                if (isset($wsdata['status']) && $wsdata['status'] === true) {
-                                    $totalRecord = $wsdata['total_count'];
-                                    if ($totalRecord > 0) {
-                                        if (isset($wsdata['customers']) && !empty($wsdata['customers'])) {
-                                            $allData = $wsdata['customers'];
-                                            if (isset($allData[0]['customer_id']) && (int) $allData[0]['customer_id'] > 0) {
-                                                $duellCustomerId = $allData[0]['customer_id'];
-                                            }
-                                        }
-                                    }
-                                }
-                                if ($duellCustomerId == 0) {
-                                    $customerSaveData = array(
-                                        'customer_name' => $customerRowData['customer_name'],
-                                        'phone' => $customerRowData['phone'],
-                                        'email' => $customerRowData['email'],
-                                        'primary_address' => $customerRowData['primary_address'],
-                                        'primary_zip' => $customerRowData['primary_zip'],
-                                        'city' => $customerRowData['city']
-                                    );
-                                    $wsdata = callDuell('customer', 'put', $customerSaveData, 'json', $type);
-                                    if (isset($wsdata['status']) && $wsdata['status'] === true) {
-                                        if (isset($wsdata['customers']) && !empty($wsdata['customers'])) {
-                                            $duellCustomerId = $wsdata['customers'];
-                                        }
-                                    }
-                                }
-                                if ($duellCustomerId > 0) {
-                                    $newCustomersDuellId[$custEmail] = $duellCustomerId;
+                                    write_log("notSyncCustomerData: " . json_encode($notSyncCustomerData));
+                                    write_log("notSyncCustomerOrderData: " . json_encode($notSyncCustomerOrderData));
                                 }
                             }
-                            if (!empty($newCustomersDuellId)) {
-                                foreach ($newCustomersDuellId as $custEmail => $duellCustomerId) {
-                                    if (isset($notSyncCustomerData[$custEmail]) && isset($notSyncCustomerOrderData[$custEmail])) {
-                                        $custOrderIds = $notSyncCustomerOrderData[$custEmail];
-                                        foreach ($custOrderIds as $custOrderData) {
-                                            $prepareOrderData[$custOrderData['order_id']]['order_data']['customer_id'] = $duellCustomerId;
-                                            update_post_meta($custOrderData['order_id'], '_duell_customer_id', $duellCustomerId);
-                                        }
-                                        unset($notSyncCustomerData[$custEmail]);
-                                        unset($notSyncCustomerOrderData[$custEmail]);
-                                    }
-                                }
-                            }
-                            if (empty($notSyncCustomerData) && empty($notSyncCustomerOrderData)) {
-                                $isCustomerSync = true;
-                            } else {
-                                write_log("notSyncCustomerData: " . json_encode($notSyncCustomerData));
-                                write_log("notSyncCustomerOrderData: " . json_encode($notSyncCustomerOrderData));
-                            }
+                        } catch (Exception $ex) {
+                            write_log("customerSync(Exception): " . json_encode($ex));
                         }
-                    } catch (Exception $ex) {
-                        write_log("customerSync(Exception): " . json_encode($ex));
-                    }
-                    write_log("isCustomerSync(getOrders): " . $isCustomerSync);
+                        write_log("isCustomerSync(getOrders): " . $isCustomerSync);
 //==category sync
-                    $isProductCategorySync = true;
-                    $newCategoriesDuellId = array();
-                    try {
-                        if (!empty($notSyncCategoryData)) {
-                            $isProductCategorySync = false;
-                            foreach ($notSyncCategoryData as $catId => $categoryRowData) {
-                                $duellCategoryId = 0;
-                                $categoryApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
-                                $categoryApiData['filter[category_name]'] = $categoryRowData['category_name'];
-                                $wsdata = callDuell('product/category/list/product', 'get', $categoryApiData, 'json', $type);
-                                if (isset($wsdata['status']) && $wsdata['status'] === true) {
-                                    $totalRecord = $wsdata['total_count'];
-                                    if ($totalRecord > 0) {
-                                        if (isset($wsdata['categories']) && !empty($wsdata['categories'])) {
-                                            $allData = $wsdata['categories'];
-                                            if (isset($allData[0]['category_id']) && (int) $allData[0]['category_id'] > 0) {
-                                                $duellCategoryId = $allData[0]['category_id'];
-                                            }
-                                        }
-                                    }
-                                }
-                                if ($duellCategoryId == 0) {
-                                    $categoryNewData = array();
-                                    $categoryNewData[] = array('category_name' => $categoryRowData['category_name'],
-                                        'category_type' => 'product'
-                                    );
-                                    $categorySaveData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'category_data' => $categoryNewData);
-                                    $wsdata = callDuell('product/category/save', 'post', $categorySaveData, 'json', $type);
+                        $isProductCategorySync = true;
+                        $newCategoriesDuellId = array();
+                        try {
+                            if (!empty($notSyncCategoryData)) {
+                                $isProductCategorySync = false;
+                                foreach ($notSyncCategoryData as $catId => $categoryRowData) {
+                                    $duellCategoryId = 0;
+                                    $categoryApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
+                                    $categoryApiData['filter[category_name]'] = $categoryRowData['category_name'];
+                                    $wsdata = callDuell('product/category/list/product', 'get', $categoryApiData, 'json', $type);
                                     if (isset($wsdata['status']) && $wsdata['status'] === true) {
-                                        if (isset($wsdata['data']) && !empty($wsdata['data'])) {
-                                            $allData = $wsdata['data'];
-                                            if (isset($allData[0]['category_id']) && (int) $allData[0]['category_id'] > 0) {
-                                                $duellCategoryId = $allData[0]['category_id'];
+                                        $totalRecord = $wsdata['total_count'];
+                                        if ($totalRecord > 0) {
+                                            if (isset($wsdata['categories']) && !empty($wsdata['categories'])) {
+                                                $allData = $wsdata['categories'];
+                                                if (isset($allData[0]['category_id']) && (int) $allData[0]['category_id'] > 0) {
+                                                    $duellCategoryId = $allData[0]['category_id'];
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                if ($duellCategoryId > 0) {
-                                    $newCategoriesDuellId[$catId] = $duellCategoryId;
-                                    if ($categoryRowData['category_name'] == 'SHIPPING') {
-                                        update_option('duellintegration_shipping_category_id', $duellCategoryId);
-                                    } else {
-                                        update_term_meta($catId, '_duell_category_id', $duellCategoryId);
-                                    }
-                                }
-                            }
-                            if (!empty($newCategoriesDuellId)) {
-                                foreach ($newCategoriesDuellId as $catId => $duellCategoryId) {
-                                    if (isset($notSyncCategoryData[$catId]) && isset($notSyncCategoryOrderData[$catId]) && isset($notSyncCategoryProductData[$catId])) {
-                                        $catProductIds = $notSyncCategoryProductData[$catId];
-                                        foreach ($catProductIds as $productId) {
-                                            $notSyncProductData[$productId]['category_id'] = $duellCategoryId;
+                                    if ($duellCategoryId == 0) {
+                                        $categoryNewData = array();
+                                        $categoryNewData[] = array('category_name' => $categoryRowData['category_name'],
+                                            'category_type' => 'product'
+                                        );
+                                        $categorySaveData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'category_data' => $categoryNewData);
+                                        $wsdata = callDuell('product/category/save', 'post', $categorySaveData, 'json', $type);
+                                        if (isset($wsdata['status']) && $wsdata['status'] === true) {
+                                            if (isset($wsdata['data']) && !empty($wsdata['data'])) {
+                                                $allData = $wsdata['data'];
+                                                if (isset($allData[0]['category_id']) && (int) $allData[0]['category_id'] > 0) {
+                                                    $duellCategoryId = $allData[0]['category_id'];
+                                                }
+                                            }
                                         }
-                                        unset($notSyncCategoryData[$catId]);
-                                        unset($notSyncCategoryOrderData[$catId]);
-                                        unset($notSyncCategoryProductData[$catId]);
+                                    }
+                                    if ($duellCategoryId > 0) {
+                                        $newCategoriesDuellId[$catId] = $duellCategoryId;
+                                        if ($categoryRowData['category_name'] == 'DIVERSE' && $catId == -9999999) {
+                                            update_option('duellintegration_shipping_category_id', $duellCategoryId);
+                                        } else {
+                                            update_term_meta($catId, '_duell_category_id', $duellCategoryId);
+                                        }
                                     }
                                 }
+                                if (!empty($newCategoriesDuellId)) {
+                                    foreach ($newCategoriesDuellId as $catId => $duellCategoryId) {
+                                        if (isset($notSyncCategoryData[$catId]) && isset($notSyncCategoryOrderData[$catId]) && isset($notSyncCategoryProductData[$catId])) {
+                                            $catProductIds = $notSyncCategoryProductData[$catId];
+                                            foreach ($catProductIds as $productId) {
+                                                if (isset($notSyncProductData[$productId])) {
+                                                    $notSyncProductData[$productId]['category_id'] = $duellCategoryId;
+                                                }
+                                            }
+                                            unset($notSyncCategoryData[$catId]);
+                                            unset($notSyncCategoryOrderData[$catId]);
+                                            unset($notSyncCategoryProductData[$catId]);
+                                        }
+                                    }
+                                }
+                                if (empty($notSyncCategoryData) && empty($notSyncCategoryOrderData) && empty($notSyncCategoryProductData)) {
+                                    $isProductCategorySync = true;
+                                } else {
+                                    write_log("notSyncCategoryData(getOrders): " . json_encode($notSyncCategoryData));
+                                    write_log("notSyncCategoryOrderData(getOrders): " . json_encode($notSyncCategoryOrderData));
+                                }
                             }
-                            if (empty($notSyncCategoryData) && empty($notSyncCategoryOrderData) && empty($notSyncCategoryProductData)) {
-                                $isProductCategorySync = true;
-                            } else {
-                                write_log("notSyncCategoryData(getOrders): " . json_encode($notSyncCategoryData));
-                                write_log("notSyncCategoryOrderData(getOrders): " . json_encode($notSyncCategoryOrderData));
-                            }
+                        } catch (\Exception $ex) {
+                            write_log("ProductCategorySyncException(getOrders): " . json_encode($ex));
                         }
-                    } catch (\Exception $ex) {
-                        write_log("ProductCategorySyncException(getOrders): " . json_encode($ex));
-                    }
 ///== end order product category sync
-                    write_log("isProductCatSync(getOrders): " . $isProductCategorySync);
+                        write_log("isProductCatSync(getOrders): " . $isProductCategorySync);
 //==product sync
-                    $isProductSync = true;
-                    $newProductsDuellId = array();
-                    try {
-                        if (!empty($notSyncProductData)) {
-                            $isProductSync = false;
-                            foreach ($notSyncProductData as $productId => $productRowData) {
-                                $duellProductId = 0;
-                                $productApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
-                                $productApiData['filter[product_number]'] = $productRowData['product_number'];
-                                $wsdata = callDuell('product/list', 'get', $productApiData, 'json', $type);
-                                if (isset($wsdata['status']) && $wsdata['status'] === true) {
-                                    $totalRecord = $wsdata['total_count'];
-                                    if ($totalRecord > 0) {
-                                        if (isset($wsdata['products']) && !empty($wsdata['products'])) {
-                                            $allData = $wsdata['products'];
-                                            if (isset($allData[0]['product_id']) && (int) $allData[0]['product_id'] > 0) {
-                                                $duellProductId = $allData[0]['product_id'];
-                                            }
-                                        }
-                                    }
-                                }
-                                if ($duellProductId == 0) {
-                                    $productNewData = array();
-                                    $productNewData[] = $productRowData;
-                                    $productSaveData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'product_data' => $productNewData);
-                                    $wsdata = callDuell('product/save', 'post', $productSaveData, 'json', $type);
+                        $isProductSync = true;
+                        $newProductsDuellId = array();
+                        try {
+                            if (!empty($notSyncProductData)) {
+                                $isProductSync = false;
+                                foreach ($notSyncProductData as $productId => $productRowData) {
+                                    $duellProductId = 0;
+                                    $productApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
+                                    $productApiData['filter[product_number]'] = $productRowData['product_number'];
+                                    $wsdata = callDuell('product/list', 'get', $productApiData, 'json', $type);
                                     if (isset($wsdata['status']) && $wsdata['status'] === true) {
-                                        if (isset($wsdata['data']) && !empty($wsdata['data'])) {
-                                            $allData = $wsdata['data'];
-                                            if (isset($allData[0]['product_id']) && (int) $allData[0]['product_id'] > 0) {
-                                                $duellProductId = $allData[0]['product_id'];
+                                        $totalRecord = $wsdata['total_count'];
+                                        if ($totalRecord > 0) {
+                                            if (isset($wsdata['products']) && !empty($wsdata['products'])) {
+                                                $allData = $wsdata['products'];
+                                                if (isset($allData[0]['product_id']) && (int) $allData[0]['product_id'] > 0) {
+                                                    $duellProductId = $allData[0]['product_id'];
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                if ($duellProductId > 0) {
-                                    $newProductsDuellId[$productId] = $duellProductId;
-                                    if ($productRowData['product_number'] == 'SHIPPING') {
-                                        update_option('duellintegration_shipping_product_id', $duellProductId);
-                                    } else {
-                                        update_post_meta($productId, '_duell_product_id', $duellProductId);
-                                    }
-                                }
-                            }
-                            if (!empty($newProductsDuellId)) {
-                                foreach ($newProductsDuellId as $productId => $duellProductId) {
-                                    if (isset($notSyncProductData[$productId]) && isset($notSyncProductOrderData[$productId])) {
-                                        $productOrderIds = $notSyncProductOrderData[$productId];
-                                        foreach ($productOrderIds as $productOrderData) {
-                                            $prepareOrderData[$productOrderData['order_id']]['product_data'][$productOrderData['orderline_id']]['product_id'] = $duellProductId;
+                                    if ($duellProductId == 0) {
+                                        $productNewData = array();
+                                        $productNewData[] = $productRowData;
+                                        $productSaveData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'product_data' => $productNewData);
+                                        $wsdata = callDuell('product/save', 'post', $productSaveData, 'json', $type);
+                                        if (isset($wsdata['status']) && $wsdata['status'] === true) {
+                                            if (isset($wsdata['data']) && !empty($wsdata['data'])) {
+                                                $allData = $wsdata['data'];
+                                                if (isset($allData[0]['product_id']) && (int) $allData[0]['product_id'] > 0) {
+                                                    $duellProductId = $allData[0]['product_id'];
+                                                }
+                                            }
                                         }
-                                        unset($notSyncProductData[$productId]);
-                                        unset($notSyncProductOrderData[$productId]);
+                                    }
+                                    if ($duellProductId > 0) {
+                                        $newProductsDuellId[$productId] = $duellProductId;
+                                        if ($productRowData['product_number'] == 'SHIPPING') {
+                                            update_option('duellintegration_shipping_product_id', $duellProductId);
+                                        } else {
+                                            update_post_meta($productId, '_duell_product_id', $duellProductId);
+                                        }
                                     }
                                 }
+                                if (!empty($newProductsDuellId)) {
+                                    foreach ($newProductsDuellId as $productId => $duellProductId) {
+                                        if (isset($notSyncProductData[$productId]) && isset($notSyncProductOrderData[$productId])) {
+                                            $productOrderIds = $notSyncProductOrderData[$productId];
+                                            foreach ($productOrderIds as $productOrderData) {
+                                                $prepareOrderData[$productOrderData['order_id']]['product_data'][$productOrderData['orderline_id']]['product_id'] = $duellProductId;
+                                            }
+                                            unset($notSyncProductData[$productId]);
+                                            unset($notSyncProductOrderData[$productId]);
+                                        }
+                                    }
+                                }
+                                if (empty($notSyncProductData) && empty($notSyncProductOrderData)) {
+                                    $isProductSync = true;
+                                } else {
+                                    write_log("notSyncProductData(getOrders): " . json_encode($notSyncProductData));
+                                    write_log("notSyncProductOrderData(getOrders): " . json_encode($notSyncProductOrderData));
+                                }
                             }
-                            if (empty($notSyncProductData) && empty($notSyncProductOrderData)) {
-                                $isProductSync = true;
-                            } else {
-                                write_log("notSyncProductData(getOrders): " . json_encode($notSyncProductData));
-                                write_log("notSyncProductOrderData(getOrders): " . json_encode($notSyncProductOrderData));
-                            }
+                        } catch (\Exception $ex) {
+                            write_log("ProductSyncException(getOrders): " . json_encode($ex));
                         }
-                    } catch (\Exception $ex) {
-                        write_log("ProductSyncException(getOrders): " . json_encode($ex));
-                    }
 ///== end order product sync
-                    write_log("isProductSync(getOrders): " . $isProductSync);
+                        write_log("isProductSync(getOrders): " . $isProductSync);
+                    }
+
                     try {
                         if (!empty($prepareOrderData)) {
                             if ($isCustomerSync == true && $isProductCategorySync == true && $isProductSync == true) {
@@ -1130,11 +1191,17 @@ class Duellintegration {
                                                 update_post_meta($orderRow['reference_order_number'], '_duell_order_number', $orderRow['order_number']);
                                             }
                                         }
+
+                                        $response['status'] = TRUE;
+                                        $response['message'] = 'success';
+                                        update_option('duellintegration_order_lastsync', date('Y-m-d H:i:s'));
+                                        return $response;
+                                    } else {
+                                        $text_error = $wsdata['message'];
+                                        write_log('OrderSync() - Error:: ' . $text_error);
+                                        $response['message'] = $text_error;
+                                        return $response;
                                     }
-                                    $response['status'] = TRUE;
-                                    $response['message'] = 'success';
-                                    update_option('duellintegration_order_lastsync', date('Y-m-d H:i:s'));
-                                    return $response;
                                 } else {
                                     $text_error = $wsdata['message'];
                                     write_log('OrderSync() - Error:: ' . $text_error);
@@ -1174,18 +1241,18 @@ class Duellintegration {
             if ($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') {
                 if ($duellClientNumber <= 0) {
                     $text_error = 'AdjustStockSync() - Client number is not setup';
-                    write_log($text_error);
+                    write_log($text_error, true);
                     return;
                 }
                 if (is_null($duellClientToken) || empty($duellClientToken) || strlen($duellClientToken) <= 30) {
                     $text_error = 'AdjustStockSync() - Client token is not setup';
-                    write_log($text_error);
+                    write_log($text_error, true);
                     return;
                 }
 
                 if (is_null($duellStockDepartmentToken) || empty($duellStockDepartmentToken) || strlen($duellStockDepartmentToken) <= 30) {
                     $text_error = 'AdjustStockSync() - Stock department token is not setup';
-                    write_log($text_error);
+                    write_log($text_error, true);
                     return;
                 }
                 $orderDetail = getWooCommerceOrderProductsById($order_id, array('sku', 'quantity'));
@@ -1211,7 +1278,7 @@ class Duellintegration {
                     write_log('duellStockUpdateSuccess():: Order Id: ' . $orderDetail['order']['id'] . $productStockLogStr, true);
                 } else {
                     $text_error = 'AdjustStockSync() - Error:: ' . $wsdata['message'];
-                    write_log($text_error);
+                    write_log($text_error, true);
                     duellMailAlert($text_error, 422);
                     return;
                 }
@@ -1221,13 +1288,13 @@ class Duellintegration {
             }
         } catch (Exception $e) {
             $text_error = 'AdjustStockSync() - Catch exception throw:: ' . $e->getMessage();
-            write_log($text_error);
+            write_log($text_error, true);
             duellMailAlert($text_error, 422);
             return;
         }
     }
 
-    public function sync_stocks($type = "manual") {
+    public function sync_stocks($type = "") {
         $type = strtolower($type);
         $response = array();
         $response['status'] = FALSE;
@@ -1350,7 +1417,7 @@ class Duellintegration {
         }
     }
 
-    public function sync_prices($type = "manual") {
+    public function sync_prices($type = "") {
         $type = strtolower($type);
         $response = array();
         $response['status'] = FALSE;
@@ -1469,7 +1536,7 @@ class Duellintegration {
         }
     }
 
-    public function sync_products($type = "manual") {
+    public function sync_products($type = "") {
         $type = strtolower($type);
         $response = array();
         $response['status'] = FALSE;
@@ -1609,8 +1676,15 @@ class Duellintegration {
                             'post_type' => "product",
                             'menu_order' => 0
                         );
-                        $post_id = wp_insert_post($post, $wp_error = true);
-                        write_log("The error is: " . $wp_error);
+                        $post_id = wp_insert_post($post);
+
+
+                        if (!is_wp_error($post_id)) {
+                            //the post is valid
+                        } else {
+                            //there was an error in the post insertion,
+                            write_log("The error is: " . $post_id->get_error_message());
+                        }
                     } else {
 //Update post
                         if ($updateExistingProduct == '1' || $updateExistingProduct == 1) {
@@ -1629,7 +1703,11 @@ class Duellintegration {
 // For new product only
                         if (is_null($productExists)) {
                             wp_set_object_terms($post_id, 'simple', 'product_type');
-                            wp_set_object_terms($post_id, $categoryName, 'product_cat');
+                            $termIds = wp_set_object_terms($post_id, $categoryName, 'product_cat');
+
+                            if (is_array($termIds) && isset($termIds[0]) && $termIds[0] > 0) {
+                                update_term_meta($termIds[0], '_duell_category_id', $categoryId);
+                            }
 
                             update_post_meta($post_id, '_wc_review_count', "0");
                             update_post_meta($post_id, '_wc_rating_count', array());
