@@ -41,26 +41,25 @@ On Wordpress Admin
 * **Stock Department:** Copy the department token in which stock need to manage.
 * **Order Department:** Copy the department token in which Woocommerce order save.
 * **Update existing products:** If flag is enabled, only update the existing product information
-* **Enable Log:** In case of enable, it will save all logs in wp-content folder with file name  **`duell-YYYY-mm-dd.log`**
+* **Enable Log:** In case of enable, it will save all logs datewise inside wp-content > uploads > duell folder with file name  **`YYYY-mm-dd.log`**
 * **Enable Sync:** If flag is enabled, only synced data with Duell
 
-### Step 5: Setup cron job with CURL
+### Step 5: Setup cron job manually 
 
-* Every 30 minutes
+If Wordpress auto cron not work, than user have to setup cron job command manually to the server. [Here](https://developer.wordpress.org/plugins/cron/hooking-into-the-system-task-scheduler/)
+
+Cron job can be set either with cURL or wget.
+
+* Every 15 minutes
 
   ```bash
-  */30 * * * * /usr/bin/curl http://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
+  */15 * * * * curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
   ```
   
 * Every 3 hours
 
   ```bash
-  * */3 * * * /usr/bin/curl http://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
-  ```
-* Every night 3am
-
-  ```bash
-  * 3 * * * /usr/bin/curl http://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
+  * */3 * * * curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
   ```
  
 ## How to Use
