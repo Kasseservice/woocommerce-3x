@@ -91,9 +91,7 @@ On WordPress administration panel
 * Activate plugin first. 
 * Click on **`Settings`** to configure it as mentioned in **[Step 4](#step-4-setup-duell-credential)**.
 
-### Products Sync
-
-#### Product Sync Workflow
+### Products Sync Workflow
 
 * Product sync needs to be done as a first step. The plugin checks if **`product number`** of Duell exists in the Woocommerce product at **`SKU`** field. 
 * If product number already exists, plugin only update product information if **`Update existing product`** flag is enabled. 
@@ -105,7 +103,7 @@ On WordPress administration panel
 * Products with flag `View in online webshop` only sync.
 
 
-### Prices
+### Prices Sync Workflow
 
 Synchronize products with latest prices only if `Update existing products` flag is enabled. Plugin manages price based on Woocommerce setting `Prices entered with tax`.
   
@@ -114,11 +112,11 @@ Synchronize products with latest prices only if `Update existing products` flag 
 
 **NOTE:** Once product sync and then if there is change in change Woocommerce settings, the product price will not get updated.  In such case, the price needs to manually change for individual products.
 
-### Stocks
+### Stocks Sync Workflow
 
 Second step is to synchronize latest stocks from Duell only if `Stock department` is set and `Update existing products` flag is enabled. If stock greater than **`0`** and product `Manage stock?` checkbox is checked then plugin updates stock status to **`InStock`** and stock value to **`Stock`** to latest stock number.
 
-### Subtract stocks from Duell
+### Subtract stocks from Duell Workflow
 
 Whenever a new order placed from Webshop or Admin side, plugin subtracts stocks from Duell if `Stock department` is set. 
 
@@ -131,7 +129,7 @@ Whenever a new order placed from Webshop or Admin side, plugin subtracts stocks 
 
   **`woocommerce_process_shop_order_meta`**
 
-### Orders
+### Orders Sync Workflow
 
 * Orders are synchronize only if `Order department` is set.
 * Orders are start sync from the entered order number in `Start from orde No.` field. 
