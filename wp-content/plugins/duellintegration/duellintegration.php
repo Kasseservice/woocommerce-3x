@@ -357,6 +357,7 @@ class Duellintegration {
                 echo '<b>Note:</b> Make sure you have API access in Duell manager section. <a href="https://github.com/Kasseservice/woocommerce-3x" target="_blank" class="button">' . __('Support', 'duellintegration') . '</a>';
                 break;
             case 'duell_product_configuration_section':
+                echo '<b>Note:</b> Products with <b>View in online webshop</b> only get from Duell.';
                 break;
             case 'duell_price_configuration_section':
                 break;
