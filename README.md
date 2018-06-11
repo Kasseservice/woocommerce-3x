@@ -42,7 +42,7 @@ On Wordpress Admin
 * **Order Department:** Copy the department token in which Woocommerce order save.
 * **Update existing products:** If flag is enabled, only update the existing product information
 * **Enable Log:** In case of enable, it will save all logs datewise inside wp-content > uploads > duell folder with file name  **`YYYY-mm-dd.log`**
-* **Enable Sync:** If flag is enabled, only synced data with Duell
+* **Enable Sync:** If flag is enabled, auto sync will work. If disabled then have to manually sync.
 
 ### Step 5: Setup cron job manually 
 
@@ -81,6 +81,7 @@ On WordPress administration panel
     * Stock to **`OutOfStock`** 
     * Stock value to **`0`** 
 * Products need to manually **`published`** to enable it for sale.
+* Products with flag `View in online webshop` only sync.
 
 Check below **[Prices](#prices)** section point for product price.
 
