@@ -36,13 +36,34 @@ On Wordpress Admin
 
 **Note:** Need API related access available in Duell application. Find the below details in Duell Manager area > API-oppsett 
 
+#### Duell Configuration
+
 * **Client Number:** Required for API authentication
 * **Client Token:** Required for API authentication
-* **Stock Department:** Copy the department token in which stock need to manage.
-* **Order Department:** Copy the department token in which Woocommerce order save.
-* **Update existing products:** If flag is enabled, only update the existing product information
 * **Enable Log:** In case of enable, it will save all logs datewise inside wp-content > uploads > duell folder with file name  **`YYYY-mm-dd.log`**
 * **Enable Sync:** If flag is enabled, auto sync will work. If disabled then have to manually sync.
+
+#### Product Configuration
+
+* **Create new product category:** If flag is enabled, only create new product category in Woocommerce.
+* **Create new products:** If flag is enabled, only create new products in Woocommerce.
+* **Update existing products:** If flag is enabled, only update the existing product information in Woocommerce.
+
+#### Price Configuration
+
+* **Update existing products:** If flag is enabled, only update the existing product price with Duell price.
+
+#### Stock Configuration
+
+* **Stock Department:** Copy the department token in which stock need to manage.
+* **Update existing products:** If flag is enabled, only update the existing product stock with Duell stock.
+
+#### Order Configuration
+
+* **Order Department:** Copy the department token in which Woocommerce order save.
+* **Start from Order No.:** Enter the order number from which start sending to Duell.
+* **Order Status:** Select the which status orders sends to Duell.
+* **Create new products:** If flag is enabled, only create new products to Duell, otherwise exclude the order.
 
 ### Step 5: Setup cron job manually 
 
