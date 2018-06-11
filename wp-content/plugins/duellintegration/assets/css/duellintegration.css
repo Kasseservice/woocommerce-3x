@@ -1,41 +1,43 @@
-.col-left {
+.duellwrap .col-left {
 	width: 50%;
     float: left;
     box-sizing: border-box;
 }
 
-.col-right{
+.duellwrap .col-right{
 	width: 50%;
     float: left;
     box-sizing: border-box;
     text-align: center;	
 }
 
-.col-right-hf{
+.duellwrap .col-right-hf{
 	width: 50%;
     float: left;
     box-sizing: border-box;
     text-align: center;
 	background-color: #fff;
 }
-
-.borderT{
+.duellwrap .form-table {
+    border-bottom: 1px solid #ccc;
+}
+.duellwrap .borderT{
 	border-top: 1px solid #ccc;
 }
-.borderL{
+.duellwrap .borderL{
 	border-left: 1px solid #ccc;
 }
 
-.borderR{
+.duellwrap .borderR{
 	border-right: 1px solid #ccc;
 }
 
 
-.col-right h3{
+.duellwrap .col-right h3{
 	    font-size: 24px;
 }
 
-.syncbutton {
+.duellwrap .syncbutton {
 	display: inline-block;
     background: #26baac;
     color: #fff;
@@ -48,17 +50,17 @@
     -moz-box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
-.syncbutton:hover {
+.duellwrap .syncbutton:hover {
 	color:#fff;
 }
 
-.infodiv {
+.duellwrap .infodiv {
 	clear:both;
 	border-bottom:1px solid #ccc;
 	padding: 15px;
 }
 
-.txtL {
+.duellwrap .txtL {
 	text-align:left;
 }
 

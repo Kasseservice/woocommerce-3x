@@ -236,7 +236,7 @@ class Duellintegration {
         }
         ?>
         <div id="blocker" style="display: none;"><div><?php echo __('Processing', 'duellintegration') ?>...</div></div>
-        <div class="wrap">
+        <div class="wrap duellwrap">
           <h1><?php echo __('Duell Integration', 'duellintegration') ?></h1>
           <div class="col-left">
             <form method="post" action="options.php">
@@ -385,11 +385,11 @@ class Duellintegration {
                 'label' => __('Client Number', 'duellintegration'),
                 'section' => 'duell_configuration_section',
                 'type' => 'number',
-                'placeholder' => __('Client Number used for API authentication', 'duellintegration'),
+                'placeholder' => __('Client Number', 'duellintegration'),
                 'class' => "",
                 'default' => '',
                 'helper' => '',
-                'supplimental' => '',
+                'supplimental' => __('Client Number used for API authentication', 'duellintegration'),
                 'validation' => true
             ),
             array(
@@ -397,11 +397,11 @@ class Duellintegration {
                 'label' => __('Client Token', 'duellintegration'),
                 'section' => 'duell_configuration_section',
                 'type' => 'text',
-                'placeholder' => __('Client Token used for API authentication', 'duellintegration'),
+                'placeholder' => __('Client Token', 'duellintegration'),
                 'class' => "regular-text ltr",
                 'default' => '',
                 'helper' => '',
-                'supplimental' => '',
+                'supplimental' => __('Client Token used for API authentication', 'duellintegration'),
                 'validation' => true
             ), array(
                 'uid' => 'duellintegration_log_status',
@@ -415,7 +415,7 @@ class Duellintegration {
                 'default' => 0,
                 'class' => "",
                 'helper' => '',
-                'supplimental' => '',
+                'supplimental' => __('If enable, log files created at wp-content/uploads/duell/YYYY-mm-dd.log', 'duellintegration'),
                 'validation' => false
             ),
             array(
@@ -430,7 +430,7 @@ class Duellintegration {
                 'default' => 1,
                 'class' => "",
                 'helper' => '',
-                'supplimental' => '',
+                'supplimental' => __('If enable, auto sync only work', 'duellintegration'),
                 'validation' => false
             ),
             array(
@@ -457,7 +457,7 @@ class Duellintegration {
                 'default' => 0,
                 'class' => "",
                 'helper' => '',
-                'supplimental' => '',
+                'supplimental' => __('If enable, exisiting product stock updated with Duell stock', 'duellintegration'),
                 'validation' => false
             ),
             array(
@@ -472,7 +472,7 @@ class Duellintegration {
                 'default' => 0,
                 'class' => "",
                 'helper' => '',
-                'supplimental' => '',
+                'supplimental' => __('If enable, exisiting product price updated with Duell price', 'duellintegration'),
                 'validation' => false
             ),
             array(
@@ -523,7 +523,7 @@ class Duellintegration {
                 'default' => 0,
                 'class' => "",
                 'helper' => '',
-                'supplimental' => '',
+                'supplimental' => __('If enable, create new products at Duell', 'duellintegration'),
                 'validation' => false
             ),
             array(
@@ -538,7 +538,7 @@ class Duellintegration {
                 'default' => 0,
                 'class' => "",
                 'helper' => '',
-                'supplimental' => '',
+                'supplimental' => __('If enable, Duell create new product categories to Woocommerce', 'duellintegration'),
                 'validation' => false
             ),
             array(
@@ -553,7 +553,7 @@ class Duellintegration {
                 'default' => 0,
                 'class' => "",
                 'helper' => '',
-                'supplimental' => '',
+                'supplimental' => __('If enable, Duell create new product to Woocommerce', 'duellintegration'),
                 'validation' => false
             ), array(
                 'uid' => 'duellintegration_update_existing_product',
@@ -567,7 +567,7 @@ class Duellintegration {
                 'default' => 0,
                 'class' => "",
                 'helper' => '',
-                'supplimental' => '',
+                'supplimental' => __('If enable, Duell update exisiting product information to Woocommerce', 'duellintegration'),
                 'validation' => false
             )
         );
