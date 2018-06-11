@@ -13,6 +13,29 @@ Dependencies
 
 This module requires Woocommerce 3.x plugin installed and active.
 
+Frequently Asked Questions
+-------------
+
+| Action        |    Supported         | Comment  |
+| :------------- |:-------------:| :-----|
+| Insert product category from DUELL to WP | Yes | If `Create new product category` flag is enabled. |
+| Insert product category from WP to DUELL | No | |
+| Update product category from DUELL to WP | No | |
+| Update product category from WP to DUELL | No | |
+|  Insert product inc price from DUELL to WP     | Yes | Every 3rd hour. |
+|  Insert product inc price from WP to DUELL     | Yes | In case we need to create an order in DUELL and product does not exist. New product must have SKU. |
+|  Update product from DUELL to WP     | Yes | Every 15 minutes. Currently supported only title and description update.  |
+|  Update product from WP to DUELL     | No |  |
+|  Update price from DUELL to WP     | Yes | Every 15 minutes. If `update existing product` flag is enabled. |
+|  Update price from WP to DUELL     | No |  |
+|  Update stock from DUELL to WP     | Yes | Every 15 minutes. If `update existing product` flag is enabled and product `Manage stock`  checkbox is checked. |
+|  Update stock from WP to DUELL | Yes | When you receive new order in WP. If order stocks update, it will not updating in DUELL. |
+| Insert customer from WP to DUELL | Yes | In case we need to create an order in DUELL and customer does not exist. |
+|  Insert customer from DUELL to WP | No | |
+|  Insert orders from WP to DUELL  | Yes | Every 15 minutes. |
+
+
+
 Installation
 ------------
 
@@ -83,7 +106,7 @@ Cron job can be set either with cURL or wget.
   * */3 * * * curl https://<YOURWEBSHOP.COM>/wp-cron.php?doing_wp_cron >/dev/null 2>&1
   ```
  
-## How to Use
+How to Use
 -------
 On WordPress administration panel 
 
