@@ -45,7 +45,7 @@ On Wordpress Admin
 
 #### Product Configuration
 
-* **Create new product category:** If flag is enabled, only create new product category in Woocommerce.
+* **Create new product category:** If flag is enabled, only create new product category in Woocommerce. 
 * **Create new products:** If flag is enabled, only create new products in Woocommerce.
 * **Update existing products:** If flag is enabled, only update the existing product information in Woocommerce.
 
@@ -106,22 +106,23 @@ On WordPress administration panel
 
 Check below **[Prices](#prices)** section point for product price.
 
-### Stocks
-
-Second step is to synchronize latest stocks from Duell. If stock greater than **`0`** then plugin updates stock status to **`InStock`** and stock value to **`Stock`** to latest stock number.
 
 ### Prices
 
-Synchronize products with latest prices. Plugin manages price based on Woocommerce setting `Prices entered with tax`.
+Synchronize products with latest prices only if `Update existing products` flag is enabled. Plugin manages price based on Woocommerce setting `Prices entered with tax`.
   
   * **`Yes, I will enter prices inclusive of tax`:** Adds price inclusive tax.
   * **`No, I will enter prices exclusive of tax`:** Adds price exclusive tax. Woocommerce add tax based on flag **`Enable tax rates and calculations`** and configured tax. If tax flag enabled then Woocommerce apply tax based on setting in **`Tax`** tab.
 
-**NOTE:** Once product sync and tthen if there is change in change Woocommerce settings, the product price will not get updated.  In such case, the price needs to manually change for individual products.
+**NOTE:** Once product sync and then if there is change in change Woocommerce settings, the product price will not get updated.  In such case, the price needs to manually change for individual products.
+
+### Stocks
+
+Second step is to synchronize latest stocks from Duell only if `Stock department` is set and `Update existing products` flag is enabled. If stock greater than **`0`** and product `Manage stock?` checkbox is checked then plugin updates stock status to **`InStock`** and stock value to **`Stock`** to latest stock number.
 
 ### Subtract stocks from Duell
 
-Whenever a new order placed from Webshop or Admin side, plugin subtracts stocks from Duell. 
+Whenever a new order placed from Webshop or Admin side, plugin subtracts stocks from Duell if `Stock department` is set. 
 
 
 * Webshop order hook. The Hook can be changed as per user requirement.
@@ -134,9 +135,13 @@ Whenever a new order placed from Webshop or Admin side, plugin subtracts stocks 
 
 ### Orders
 
-* Orders are synchronize once in a day (can be set by user; preferred 3 AM). 
-* Plugin adds an extra column (**Duell Order No.**) in Woocommerce admin order list page. User can search Duell order number from search box.
+* Orders are synchronize only if `Order department` is set.
+* Orders are start sync from the entered order number in `Start from orde No.` field. 
+* Only selected status orders are synced `Order status`. If `Dont Sync` is selected then it will not sync.
+* Plugin creates new products to Duell if `Create new product` is enabled, otherwise exclude the orders.
 * Plugin adds **`SHIPPING`** price as a product in Duell on order sync.
+* Plugin adds all new products under category `Diverse` in Duell.
+* Plugin adds an extra column (**Duell Order No.**) in Woocommerce admin order list page. User can search Duell order number from search box.
 
 
 Recommended Tools
