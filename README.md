@@ -104,8 +104,6 @@ On WordPress administration panel
 * Products need to manually **`published`** to enable it for sale.
 * Products with flag `View in online webshop` only sync.
 
-Check below **[Prices](#prices)** section point for product price.
-
 
 ### Prices
 
