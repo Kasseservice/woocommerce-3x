@@ -57,13 +57,13 @@ On Wordpress Admin
 
 ### Step 4: Setup duell credential
 
-**Note:** Need API related access available in Duell application. Find the below details in Duell Manager area > API-oppsett 
+**Note:** Need API related access available in Duell application. Find the below details in `Duell Manager` area > `API-oppsett` 
 
 #### Duell Configuration
 
 * **Client Number:** Required for API authentication
 * **Client Token:** Required for API authentication
-* **Enable Log:** In case of enable, it will save all logs datewise inside wp-content > uploads > duell folder with file name  **`YYYY-mm-dd.log`**
+* **Enable Log:** In case of enable, it will save all logs datewise inside `wp-content > uploads > duell` folder with file name  **`YYYY-mm-dd.log`**
 * **Enable Sync:** If flag is enabled, auto sync will work. If disabled then have to manually sync.
 
 #### Product Configuration
