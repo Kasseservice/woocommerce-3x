@@ -565,7 +565,7 @@ if (!function_exists('validateJsonDecode')) {
 if (!function_exists('duellMailAlert')) {
 
     function duellMailAlert($error_message = '', $error_code = '') {
-        //implement mail functions which sends email to site admin from option table
+        //implement mail functions which sends email to site admin from option table   get_option('admin_email')
     }
 
 }

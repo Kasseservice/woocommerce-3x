@@ -112,19 +112,33 @@ class Duellintegration {
 // Remove site wise option
         delete_option('duellintegration_client_number');
         delete_option('duellintegration_client_token');
-        delete_option('duellintegration_stock_department_token');
-        delete_option('duellintegration_order_department_token');
+
+
         delete_option('duellintegration_api_access_token');
         delete_option('duellintegration_log_status');
         delete_option('duellintegration_integration_status');
-        delete_option('duellintegration_update_existing_product');
+
         delete_option('duellintegration_product_lastsync');
         delete_option('duellintegration_order_lastsync');
         delete_option('duellintegration_prices_lastsync');
         delete_option('duellintegration_shipping_product_id');
         delete_option('duellintegration_shipping_category_id');
+
+
+        delete_option('duellintegration_create_new_product_in_wp');
+        delete_option('duellintegration_create_new_category_in_wp');
+        delete_option('duellintegration_update_existing_product');
+
+        delete_option('duellintegration_update_existing_product_price');
+
+        delete_option('duellintegration_update_existing_product_stock');
+        delete_option('duellintegration_stock_department_token');
+
+
+        delete_option('duellintegration_order_department_token');
         delete_option('duellintegration_order_start_from');
         delete_option('duellintegration_order_sync_status');
+        delete_option('duellintegration_create_new_product_to_duell');
     }
 
     /*
@@ -328,6 +342,7 @@ class Duellintegration {
     public function setup_sections() {
         add_settings_section('duell_configuration_section', 'Duell Configuration', array($this, 'section_callback'), 'duellintegration');
         add_settings_section('duell_product_configuration_section', 'Product Configuration', array($this, 'section_callback'), 'duellintegration');
+        add_settings_section('duell_price_configuration_section', 'Price Configuration', array($this, 'section_callback'), 'duellintegration');
         add_settings_section('duell_stock_configuration_section', 'Stock Configuration', array($this, 'section_callback'), 'duellintegration');
         add_settings_section('duell_order_configuration_section', 'Order Configuration', array($this, 'section_callback'), 'duellintegration');
     }
@@ -342,6 +357,8 @@ class Duellintegration {
                 echo '<b>Note:</b> Make sure you have API access in Duell manager section. <a href="https://github.com/Kasseservice/woocommerce-3x" target="_blank" class="button">' . __('Support', 'duellintegration') . '</a>';
                 break;
             case 'duell_product_configuration_section':
+                break;
+            case 'duell_price_configuration_section':
                 break;
             case 'duell_stock_configuration_section':
                 break;
@@ -429,6 +446,36 @@ class Duellintegration {
                 'validation' => true
             ),
             array(
+                'uid' => 'duellintegration_update_existing_product_stock',
+                'label' => __('Update Existing Products', 'duellintegration'),
+                'section' => 'duell_stock_configuration_section',
+                'type' => 'select',
+                'options' => array(
+                    '1' => 'Yes',
+                    '0' => 'No'
+                ),
+                'default' => 0,
+                'class' => "",
+                'helper' => '',
+                'supplimental' => '',
+                'validation' => false
+            ),
+            array(
+                'uid' => 'duellintegration_update_existing_product_price',
+                'label' => __('Update Existing Products', 'duellintegration'),
+                'section' => 'duell_price_configuration_section',
+                'type' => 'select',
+                'options' => array(
+                    '1' => 'Yes',
+                    '0' => 'No'
+                ),
+                'default' => 0,
+                'class' => "",
+                'helper' => '',
+                'supplimental' => '',
+                'validation' => false
+            ),
+            array(
                 'uid' => 'duellintegration_order_department_token',
                 'label' => __('Order Department', 'duellintegration'),
                 'section' => 'duell_order_configuration_section',
@@ -465,6 +512,50 @@ class Duellintegration {
                 'validation' => false
             ),
             array(
+                'uid' => 'duellintegration_create_new_product_to_duell',
+                'label' => __('Create new products', 'duellintegration'),
+                'section' => 'duell_order_configuration_section',
+                'type' => 'select',
+                'options' => array(
+                    '1' => 'Yes',
+                    '0' => 'No'
+                ),
+                'default' => 0,
+                'class' => "",
+                'helper' => '',
+                'supplimental' => '',
+                'validation' => false
+            ),
+            array(
+                'uid' => 'duellintegration_create_new_category_in_wp',
+                'label' => __('Create new product category', 'duellintegration'),
+                'section' => 'duell_product_configuration_section',
+                'type' => 'select',
+                'options' => array(
+                    '1' => 'Yes',
+                    '0' => 'No'
+                ),
+                'default' => 0,
+                'class' => "",
+                'helper' => '',
+                'supplimental' => '',
+                'validation' => false
+            ),
+            array(
+                'uid' => 'duellintegration_create_new_product_in_wp',
+                'label' => __('Create new products', 'duellintegration'),
+                'section' => 'duell_product_configuration_section',
+                'type' => 'select',
+                'options' => array(
+                    '1' => 'Yes',
+                    '0' => 'No'
+                ),
+                'default' => 0,
+                'class' => "",
+                'helper' => '',
+                'supplimental' => '',
+                'validation' => false
+            ), array(
                 'uid' => 'duellintegration_update_existing_product',
                 'label' => __('Update Existing Products', 'duellintegration'),
                 'section' => 'duell_product_configuration_section',
@@ -500,7 +591,7 @@ class Duellintegration {
 
     public function field_callback($arguments) {
         $value = get_option($arguments['uid']);
-        if (is_null($value)) {
+        if (is_null($value) || !$value) {
             $value = $arguments['default'];
         }
         switch ($arguments['type']) {
@@ -679,6 +770,7 @@ class Duellintegration {
             $duellOrderStartFrom = (int) get_option('duellintegration_order_start_from');
             $duellOrderSyncStatus = get_option('duellintegration_order_sync_status');
 
+            $duellCreateNewProduct = get_option('duellintegration_create_new_product_to_duell');
 
             if (( ($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') || $type == "manual") && $duellOrderSyncStatus != 'dont-sync') {
                 if ($duellClientNumber <= 0) {
@@ -745,7 +837,7 @@ class Duellintegration {
                     //$sql .= " AND ( STR_TO_DATE(mt2.meta_value, '%Y-%m-%d %H:%i') >= '" . date('Y-m-d H:i', strtotime($lastSyncDate)) . "' ) ";
                 }
                 $sql .= " GROUP BY wp_posts.ID ORDER BY wp_posts.ID ASC";
-                write_log($sql);
+
                 $fetchNonSyncedOrders = $wpdb->get_results($sql, ARRAY_A);
                 $prepareOrderData = array();
                 $notSyncCategoryData = array();
@@ -919,7 +1011,7 @@ class Duellintegration {
                       write_log($prepareOrderData); */
 
 
-                    write_log('Excluded orders: ' . json_encode($excludeOrders));
+
                     if (!empty($prepareOrderData)) {
 
 
@@ -1124,7 +1216,7 @@ class Duellintegration {
                                             }
                                         }
                                     }
-                                    if ($duellProductId == 0) {
+                                    if ($duellProductId == 0 && ($duellCreateNewProduct == 1 || $duellCreateNewProduct == '1')) {
                                         $productNewData = array();
                                         $productNewData[] = $productRowData;
                                         $productSaveData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'product_data' => $productNewData);
@@ -1164,6 +1256,22 @@ class Duellintegration {
                                 } else {
                                     write_log("notSyncProductData(getOrders): " . json_encode($notSyncProductData));
                                     write_log("notSyncProductOrderData(getOrders): " . json_encode($notSyncProductOrderData));
+
+                                    // This code added for the purpose do not exclude all orders if only some order contains products not synced, rest orders need to sync
+                                    if (!empty($notSyncProductOrderData)) {
+                                        foreach ($notSyncProductOrderData as $productId => $notSyncProductOrder) {
+
+                                            if (!empty($notSyncProductOrder)) {
+                                                foreach ($notSyncProductOrder as $orderLineProducts) {
+                                                    $excludeOrders[] = $orderLineProducts['order_id'];
+                                                    unset($prepareOrderData[$orderLineProducts['order_id']]);
+                                                }
+                                            }
+                                            unset($notSyncProductData[$productId]);
+                                            unset($notSyncProductOrderData[$productId]);
+                                        }
+                                        $isProductSync = true;
+                                    }
                                 }
                             }
                         } catch (\Exception $ex) {
@@ -1172,6 +1280,8 @@ class Duellintegration {
 ///== end order product sync
                         write_log("isProductSync(getOrders): " . $isProductSync);
                     }
+
+                    write_log('Excluded orders: ' . json_encode($excludeOrders));
 
                     try {
                         if (!empty($prepareOrderData)) {
@@ -1304,7 +1414,10 @@ class Duellintegration {
             $duellClientNumber = (int) get_option('duellintegration_client_number');
             $duellClientToken = get_option('duellintegration_client_token');
             $duellStockDepartmentToken = get_option('duellintegration_stock_department_token');
-            if (($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') || $type == "manual") {
+
+            $duellUpdateExistingProduct = get_option('duellintegration_update_existing_product_stock');
+
+            if ((($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') || $type == "manual") && ($duellUpdateExistingProduct == '1' || $duellUpdateExistingProduct == 1)) {
                 if ($duellClientNumber <= 0) {
                     $text_error = 'Client number is not setup';
                     write_log('StockSync() - ' . $text_error);
@@ -1426,7 +1539,11 @@ class Duellintegration {
             $duellIntegrationStatus = get_option('duellintegration_integration_status');
             $duellClientNumber = (int) get_option('duellintegration_client_number');
             $duellClientToken = get_option('duellintegration_client_token');
-            if (($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') || $type == "manual") {
+
+            $duellUpdateExistingProduct = get_option('duellintegration_update_existing_product_price');
+
+
+            if ((($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') || $type == "manual") && ($duellUpdateExistingProduct == 1 || $duellUpdateExistingProduct == '1')) {
                 if ($duellClientNumber <= 0) {
                     $text_error = 'Client number is not setup';
                     write_log('PricesSync() - ' . $text_error);
@@ -1571,6 +1688,7 @@ class Duellintegration {
                 $start = 0;
                 $limit = $this->duellLimit;
                 $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+                $apiData['filter[view_on_webshop]'] = true;
                 if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
                     $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
                 }
@@ -1585,6 +1703,7 @@ class Duellintegration {
                             $nextCounter = $start + $limit;
                             while ($totalRecord > $limit && $totalRecord > $nextCounter) {
                                 $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
+                                $apiData['filter[view_on_webshop]'] = true;
                                 if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
                                     $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
                                 }
@@ -1631,6 +1750,11 @@ class Duellintegration {
     function processProductData($data = array()) {
         $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
         $updateExistingProduct = get_option('duellintegration_update_existing_product');
+
+        $duellCreateNewCategory = get_option('duellintegration_create_new_category_in_wp');
+        $duellCreateNewProduct = get_option('duellintegration_create_new_product_in_wp');
+
+
         if (!empty($data)) {
             wp_defer_term_counting(true);
             wp_defer_comment_counting(true);
@@ -1657,7 +1781,7 @@ class Duellintegration {
                         $finalPrice = number_format($priceExTax, 2, '.', '');
                     }
                     $productExists = getWooCommerceProductBySku($productNumber);
-                    if (is_null($productExists) || $productExists == '' || $productExists <= 0) {
+                    if ((is_null($productExists) || $productExists == '' || $productExists <= 0) && ($duellCreateNewProduct == '1' || $duellCreateNewProduct == 1)) {
                         if ($description == '' || is_null($description)) {
                             $description = $productName;
                         }
@@ -1703,11 +1827,36 @@ class Duellintegration {
 // For new product only
                         if (is_null($productExists)) {
                             wp_set_object_terms($post_id, 'simple', 'product_type');
-                            $termIds = wp_set_object_terms($post_id, $categoryName, 'product_cat');
 
-                            if (is_array($termIds) && isset($termIds[0]) && $termIds[0] > 0) {
-                                update_term_meta($termIds[0], '_duell_category_id', $categoryId);
+
+
+                            $termId = 0;
+                            $findTerm = get_term_by('name', $categoryName, 'product_cat');
+
+                            if (!is_null($findTerm) && !empty($findTerm)) {
+                                $termId = $findTerm->term_id;
+                            } else {
+                                if ($duellCreateNewCategory == 1 || $duellCreateNewCategory == '1') {
+
+                                    $insertedTerm = wp_insert_term($categoryName, 'product_cat', array(
+                                        'description' => '',
+                                        'slug' => '',
+                                        'parent' => 0
+                                        )
+                                    );
+
+                                    if (!is_null($insertedTerm['term_id']) && $insertedTerm['term_id'] > 0) {
+                                        $termId = $insertedTerm['term_id'];
+                                    }
+                                }
                             }
+
+                            if (isset($termId) && $termId > 0) {
+                                wp_set_object_terms($post_id, $termId, 'product_cat');
+                                update_term_meta($termId, '_duell_category_id', $categoryId);
+                            }
+
+
 
                             update_post_meta($post_id, '_wc_review_count', "0");
                             update_post_meta($post_id, '_wc_rating_count', array());
@@ -1737,12 +1886,13 @@ class Duellintegration {
                             update_post_meta($post_id, '_visibility', 'visible');
                             update_post_meta($post_id, '_featured', "no");
                             update_post_meta($post_id, '_duell_product_id', $duellProductId);
-                        }
-                        if (is_null($productExists) || ($updateExistingProduct == '1' || $updateExistingProduct == 1)) {
-                            update_post_meta($post_id, '_barcode', $barcode);
+
                             update_post_meta($post_id, '_regular_price', $finalPrice);
                             update_post_meta($post_id, '_sale_price', $finalPrice);
                             update_post_meta($post_id, '_price', $finalPrice);
+                        }
+                        if (is_null($productExists) || ($updateExistingProduct == '1' || $updateExistingProduct == 1)) {
+                            update_post_meta($post_id, '_barcode', $barcode);
                         }
                     }
                 } catch (Exception $e) {
