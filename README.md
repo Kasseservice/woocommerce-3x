@@ -16,7 +16,7 @@ This module requires Woocommerce 3.x plugin installed and active.
 Frequently Asked Questions
 -------------
 
-| Action        |    Support         | Comment  |
+| Action      |    Support         | Comment  |
 | :------------- |:-------------:| :-----|
 | Insert product category from DUELL to WP | Yes | If `Create new product category` flag is enabled. |
 | Insert product category from WP to DUELL | No | |
