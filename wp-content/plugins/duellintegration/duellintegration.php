@@ -18,7 +18,7 @@ class Duellintegration {
         register_activation_hook(__FILE__, array($this, 'setup_install'));
         register_deactivation_hook(__FILE__, array($this, 'setup_uninstall'));
 // Add setting links to plugin page
-        add_filter("plugin_action_links", array($this, 'plugin_add_settings_link'), 10, 5);
+        add_filter("plugin_action_links_" . plugin_basename(__FILE__), array($this, 'plugin_add_settings_link'), 10, 5);
 //==pre intialize values
         add_action('plugins_loaded', array($this, 'plugin_init_setup'));
 // Hook into the admin menu
