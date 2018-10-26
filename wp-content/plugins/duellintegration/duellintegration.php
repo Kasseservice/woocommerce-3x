@@ -13,6 +13,7 @@ include( plugin_dir_path(__FILE__) . 'includes/duell.php');
 class Duellintegration {
 
     public $duellLimit = 20;
+    public $productSyncError = 0;
 
     public function __construct() {
         register_activation_hook(__FILE__, array($this, 'setup_install'));
@@ -1688,6 +1689,7 @@ class Duellintegration {
                 $lastSyncDate = get_option('duellintegration_product_lastsync');
                 $start = 0;
                 $limit = $this->duellLimit;
+                $this->productSyncError = 0;
                 $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
                 $apiData['filter[view_on_webshop]'] = true;
                 if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
@@ -1722,19 +1724,77 @@ class Duellintegration {
                                 usleep(500000);
                             }
                         }
-                        update_option('duellintegration_product_lastsync', date('Y-m-d H:i:s'));
+                        if ($this->productSyncError == 0) {
+                            update_option('duellintegration_product_lastsync', date('Y-m-d H:i:s'));
+                        }
                     }
-                    $response['status'] = TRUE;
-                    $response['message'] = 'success';
-                    return $response;
+//                    $response['status'] = TRUE;
+//                    $response['message'] = 'success';
+//                    return $response;
                 } else {
                     $text_error = $wsdata['message'];
                     write_log('ProductSync() - Error:: ' . $text_error);
                     $response['message'] = $text_error;
+                    return $response;
                 }
+
+
+
+                //==deleted products
+
+                $limit = $this->duellLimit;
+
+                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+                $apiData['filter[view_on_webshop]'] = true;
+                $apiData['filter[is_deleted]'] = true;
+                if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
+                    $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
+                }
+                $wsdata = callDuell('product/list', 'get', $apiData, 'json', $type);
+                if (isset($wsdata['status']) && $wsdata['status'] === true) {
+                    $totalRecord = $wsdata['total_count'];
+                    if ($totalRecord > 0) {
+                        if (isset($wsdata['products']) && !empty($wsdata['products'])) {
+                            $allData = $wsdata['products'];
+                            $this->processDeletedProductData($allData);
+                            usleep(500000);
+                            $nextCounter = $start + $limit;
+                            while ($totalRecord > $limit && $totalRecord > $nextCounter) {
+                                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
+                                $apiData['filter[view_on_webshop]'] = true;
+                                $apiData['filter[is_deleted]'] = true;
+                                if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
+                                    $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
+                                }
+                                $wsdata = callDuell('product/list', 'get', $apiData, 'json', $type);
+                                if (isset($wsdata['status']) && $wsdata['status'] === true) {
+                                    $totalNRecord = $wsdata['total_count'];
+                                    if ($totalNRecord > 0) {
+                                        if (isset($wsdata['products']) && !empty($wsdata['products'])) {
+                                            $allData = $wsdata['products'];
+                                            $this->processDeletedProductData($allData);
+                                        }
+                                    }
+                                    $nextCounter = $nextCounter + $limit;
+                                }
+                                usleep(500000);
+                            }
+                        }
+                    }
+                } else {
+                    $text_error = $wsdata['message'];
+                    write_log('DeletedProductSync() - Error:: ' . $text_error);
+                    $response['message'] = $text_error;
+                    return $response;
+                }
+                //==end deleted products
+
+                $response['status'] = TRUE;
+                $response['message'] = 'success';
+                return $response;
             } else {
                 $text_error = 'Integration status is not active.';
-                write_log('ProductSync() - ' . $text_error);
+                write_log('DeletedProductSync() - ' . $text_error);
                 $response['message'] = $text_error;
                 return $response;
             }
@@ -1748,7 +1808,39 @@ class Duellintegration {
         return $response;
     }
 
+    function processDeletedProductData($data = array()) {
+        global $wpdb;
+
+        if (!empty($data)) {
+            wp_defer_term_counting(true);
+            wp_defer_comment_counting(true);
+            foreach ($data as $product) {
+                try {
+                    $duellProductId = $product['product_id'];
+                    $productNumber = $product['product_number'];
+
+                    $isDeleted = filter_var($product['is_deleted'], FILTER_VALIDATE_BOOLEAN);
+                    $productExists = getWooCommerceProductBySku($productNumber);
+
+                    if (!is_null($productExists) && !empty($productExists) && $productExists > 0) {
+                        if ($isDeleted) {
+                            $post_id = $productExists;
+                            $wpdb->update($wpdb->posts, array('post_status' => 'trash'), array('ID' => $post_id));
+                        }
+                    }
+                } catch (Exception $e) {
+                    $text_error = 'Deleted ProductSync Catch exception throw:: ' . $e->getMessage();
+                    write_log('DeletedProductSync() - ' . $text_error, true);
+                    $this->productSyncError++;
+                }
+            }
+            wp_defer_term_counting(false);
+            wp_defer_comment_counting(false);
+        }
+    }
+
     function processProductData($data = array()) {
+        global $wpdb;
         $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
         $updateExistingProduct = get_option('duellintegration_update_existing_product');
 
@@ -1773,6 +1865,59 @@ class Duellintegration {
                     $costPrice = $product['cost_price'];
                     $priceIncTax = $product['price_inc_vat'];
                     $isDeleted = $product['is_deleted'];
+
+                    $allowProceed = 1;
+                    $productStatus = "pending";
+                    $productType = "product";
+
+                    $taxClass = 'standard';
+
+                    $isParent = true;
+                    $hasVariantDuellProductId = 0;
+                    $mainProduct = array();
+                    $mainProductId = 0;
+                    $mainProductNumber = '';
+                    if (isset($product['is_parent'])) {
+                        $isParent = filter_var($product['is_parent'], FILTER_VALIDATE_BOOLEAN);
+
+                        if (!$isParent && isset($product['parent_variant']) && (int) $product['parent_variant'] > 0) {
+
+                            $allowProceed = 0;
+                            $hasVariantDuellProductId = (int) $product['parent_variant'];
+
+
+                            //==find duell main product
+                            $mainProduct = get_posts(
+                                array(
+                                    'post_type' => 'product',
+                                    'posts_per_page' => 1,
+                                    'post_status' => array('pending', 'publish'),
+                                    'post_parent' => 0,
+                                    'meta_query' => array(
+                                        array(
+                                            'key' => '_duell_product_id',
+                                            'value' => $hasVariantDuellProductId,
+                                            'compare' => '=',
+                                        )
+                                    )
+                                )
+                            );
+
+                            if (!is_null($mainProduct) && !empty($mainProduct) && isset($mainProduct[0]) && $mainProduct[0]->ID > 0) {
+                                $mainProductId = $mainProduct[0]->ID;
+                                $allowProceed = 1;
+
+                                $mainProductNumber = get_post_meta($mainProductId, '_sku', true);
+
+
+                                $productStatus = "publish";
+                                $productType = "product_variation";
+                                $taxClass = 'parent';
+                            }
+                            //==end
+                        }
+                    }
+
                     $finalPrice = 0;
                     if ($woocommerce_prices_include_tax == 'yes') {
                         $finalPrice = $priceIncTax;
@@ -1781,36 +1926,40 @@ class Duellintegration {
                         $priceExTax = $priceIncTax / $vatrateMultiplier;
                         $finalPrice = number_format($priceExTax, 2, '.', '');
                     }
-                    $productExists = getWooCommerceProductBySku($productNumber);
-                    if ((is_null($productExists) || $productExists == '' || $productExists <= 0) && ($duellCreateNewProduct == '1' || $duellCreateNewProduct == 1)) {
-                        if ($description == '' || is_null($description)) {
-                            $description = $productName;
-                        }
+
+                    if ($allowProceed == 1) {
+
+                        $productExists = getWooCommerceProductBySku($productNumber);
+                        if ((is_null($productExists) || $productExists == '' || $productExists <= 0) && ($duellCreateNewProduct == '1' || $duellCreateNewProduct == 1)) {
+                            if ($description == '' || is_null($description)) {
+                                $description = $productName;
+                            }
 //Create post
-                        $post = array(
-                            'comment_status' => 'closed',
-                            'ping_status' => 'closed',
-                            'post_excerpt' => '',
-                            'post_author' => 1,
-                            'post_content' => $description,
-                            'post_status' => "pending",
-                            'post_title' => $productName,
-                            'post_name' => $productName,
-                            'post_parent' => 0,
-                            'post_password' => '',
-                            'post_type' => "product",
-                            'menu_order' => 0
-                        );
-                        $post_id = wp_insert_post($post);
+                            $post = array(
+                                'comment_status' => 'closed',
+                                'ping_status' => 'closed',
+                                'post_excerpt' => '',
+                                'post_author' => 1,
+                                'post_content' => $description,
+                                'post_status' => $productStatus,
+                                'post_title' => $productName,
+                                'post_name' => $productName,
+                                'post_parent' => $mainProductId,
+                                'post_password' => '',
+                                'post_type' => $productType,
+                                'menu_order' => 0
+                            );
+                            $post_id = wp_insert_post($post);
 
 
-                        if (!is_wp_error($post_id)) {
-                            //the post is valid
+                            if (!is_wp_error($post_id)) {
+                                //the post is valid
+                            } else {
+                                //there was an error in the post insertion,
+                                write_log("The error is: " . $post_id->get_error_message());
+                                $this->productSyncError++;
+                            }
                         } else {
-                            //there was an error in the post insertion,
-                            write_log("The error is: " . $post_id->get_error_message());
-                        }
-                    } else {
 //Update post
                         if ($updateExistingProduct == '1' || $updateExistingProduct == 1) {
                             $post_id = $productExists;
@@ -1852,10 +2001,10 @@ class Duellintegration {
                                 }
                             }
 
-                            if (isset($termId) && $termId > 0) {
-                                wp_set_object_terms($post_id, $termId, 'product_cat');
-                                update_term_meta($termId, '_duell_category_id', $categoryId);
-                            }
+                                if (isset($termId) && $termId > 0 && $productType == 'product') {
+                                    wp_set_object_terms($post_id, $termId, 'product_cat');
+                                    update_term_meta($termId, '_duell_category_id', $categoryId);
+                                }
 
 
 
@@ -1867,7 +2016,7 @@ class Duellintegration {
                             update_post_meta($post_id, '_sale_price_dates_to', "");
                             update_post_meta($post_id, 'total_sales', '0');
                             update_post_meta($post_id, '_tax_status', 'taxable');
-                            update_post_meta($post_id, '_tax_class', 'standard');
+                                update_post_meta($post_id, '_tax_class', $taxClass);
                             update_post_meta($post_id, '_manage_stock', "yes");
                             update_post_meta($post_id, '_stock_status', 'outofstock');
                             update_post_meta($post_id, '_stock', "0");
@@ -1884,8 +2033,12 @@ class Duellintegration {
                             update_post_meta($post_id, '_product_attributes', array());
                             update_post_meta($post_id, '_virtual', 'no');
                             update_post_meta($post_id, '_downloadable', 'no');
+                                update_post_meta($post_id, '_download_expiry', '-1');
+                                update_post_meta($post_id, '_downloadable_files', array());
+                                update_post_meta($post_id, '_download_limit', '-1');
                             update_post_meta($post_id, '_visibility', 'visible');
                             update_post_meta($post_id, '_featured', "no");
+                                update_post_meta($post_id, '_product_image_gallery', "");
                             update_post_meta($post_id, '_duell_product_id', $duellProductId);
 
                             update_post_meta($post_id, '_regular_price', $finalPrice);
@@ -1895,15 +2048,197 @@ class Duellintegration {
                         if (is_null($productExists) || ($updateExistingProduct == '1' || $updateExistingProduct == 1)) {
                             update_post_meta($post_id, '_barcode', $barcode);
                         }
+                            //==set main product to variable product and clear the transients for main product
+                            if ($mainProductId > 0) {
+
+
+                                //==set as variant product
+                                $setMainProductVariable = wp_set_object_terms($mainProductId, 'variable', 'product_type');
+
+
+
+                                if (is_wp_error($setMainProductVariable)) {
+                                    // There was an error somewhere and the terms couldn't be set.
+                                    write_log('setMainProductVariable', true);
+                                    write_log($setMainProductVariable, true);
+                                } else {
+                                    // Success! These categories were added to the post.
+                                }
+
+                                //==create taxonomy and term for main product
+                                $parentAttributeKeyName = 'pa_' . $mainProductNumber;
+
+
+                                if (!taxonomy_exists($parentAttributeKeyName)) {
+
+
+                                    $this->createProductAttribute($mainProductNumber);
+
+                                    $registerTaxonomy = register_taxonomy(
+                                        $parentAttributeKeyName, 'product', array(
+                                        'label' => ucfirst($parentAttributeKeyName),
+                                        'hierarchical' => false,
+                                        'query_var' => true,
+                                        'rewrite' => array('slug' => $parentAttributeKeyName, 'with_front' => false),
+                                        'singular_label' => ucfirst($parentAttributeKeyName),
+                                        )
+                                    );
+                                    if (is_wp_error($registerTaxonomy)) {
+                                        // There was an error somewhere and the terms couldn't be set.
+                                        write_log('registerTaxonomy', true);
+                                        write_log($registerTaxonomy, true);
+                                    } else {
+                                        // Success! These categories were added to the post.
+                                    }
+                                }
+
+
+                                // change array or serialize
+                                $product_attributes_data = get_post_meta($mainProductId, '_product_attributes', true);
+
+                                $isAttributeExists = false;
+                                if (!empty($product_attributes_data) && !is_null($product_attributes_data)) {
+                                    foreach ($product_attributes_data as $attrKey => $attr) {
+                                        if ($attrKey == $parentAttributeKeyName) {
+                                            $isAttributeExists = true;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (!$isAttributeExists) {
+                                    // Set this attributes array to a key to using the prefix 'pa'
+                                    $newAttribute = array();
+                                    $newAttribute[$parentAttributeKeyName] = array('name' => $parentAttributeKeyName,
+                                        'value' => '',
+                                        'is_visible' => '1',
+                                        'is_variation' => '1',
+                                        'is_taxonomy' => '1'
+                                    );
+
+                                    $product_attributes_data = array_merge($product_attributes_data, $newAttribute);
+
+                                    update_post_meta($mainProductId, '_product_attributes', $product_attributes_data); // Attach the above array to the new posts meta data key '_product_attributes'
+                                }
+
+
+                                if ($productType == 'product_variation') {
+
+
+
+                                    if (!term_exists($productName, $parentAttributeKeyName)) {
+                                        $insertedTerm = wp_insert_term($productName, $parentAttributeKeyName, array(
+                                            'description' => '',
+                                            'slug' => '',
+                                            'parent' => 0
+                                            )
+                                        );
+                                        if (is_wp_error($insertedTerm)) {
+                                            // There was an error somewhere and the terms couldn't be set.
+                                            write_log('insertedTerm', true);
+                                            write_log($insertedTerm);
+                                        } else {
+                                            // Success! These categories were added to the post.
+                                        }
+                                    }
+
+                                    $attributeTerm = get_term_by('name', $productName, $parentAttributeKeyName);
+
+                                    //==set variant product term
+//                                    $setVariantProductAttributeTerm = wp_set_post_terms($post_id, $productName, $parentAttributeKeyName, true);
+//                                    if (is_wp_error($setVariantProductAttributeTerm)) {
+//                                        // There was an error somewhere and the terms couldn't be set.
+//                                        write_log('setVariantProductAttributeTerm', true);
+//                                        write_log($setVariantProductAttributeTerm);
+//                                    } else {
+//                                        // Success! These categories were added to the post.
+//                                    }
+
+                                    if (!is_null($attributeTerm) && !empty($attributeTerm) && isset($attributeTerm->slug)) {
+                                        update_post_meta($post_id, 'attribute_' . $parentAttributeKeyName, $attributeTerm->slug);
+                                    }
+
+                                    $setMainProductAttributeTerm = wp_set_object_terms($mainProductId, $productName, $parentAttributeKeyName, true);
+                                    //wp_set_post_terms($mainProductId, $productName, $parentAttributeKeyName, true);
+
+                                    if (is_wp_error($setMainProductAttributeTerm)) {
+                                        // There was an error somewhere and the terms couldn't be set.
+                                        write_log('setMainProductAttributeTerm', true);
+                                        write_log($setMainProductAttributeTerm);
+                                    } else {
+                                        // Success! These categories were added to the post.
+                                    }
+                                    //$setMainProductAttributeTerm = wp_set_object_terms($mainProductId, $productName, $parentAttributeKeyName, true);
+                                }
+
+                                delete_transient('wc_product_children_' . $mainProductId);
+                                delete_transient('wc_var_prices_' . $mainProductId);
+                            }
+                        }
+                    } else {
+                        write_log('ProductSync() - ' . $hasVariantDuellProductId . ' not found', true);
+                        $this->productSyncError++;
                     }
                 } catch (Exception $e) {
                     $text_error = 'Product Catch exception throw:: ' . $e->getMessage();
-                    write_log('ProductSync() - ' . $text_error);
+                    write_log('ProductSync() - ' . $text_error, true);
+                    $this->productSyncError++;
                 }
             }
             wp_defer_term_counting(false);
             wp_defer_comment_counting(false);
         }
+    }
+
+    function createProductAttribute($label_name) {
+        global $wpdb;
+
+
+        $attribute_id = $this->getAttributeIdFromName($label_name);
+
+        if (!empty($attribute_id)) {
+            return $attribute_id;
+        }
+
+        $slug = sanitize_title($label_name);
+
+        if (strlen($slug) >= 28) {
+            return new WP_Error('invalid_product_attribute_slug_too_long', sprintf(__('Name "%s" is too long (28 characters max). Shorten it, please.', 'woocommerce'), $slug), array('status' => 400));
+        } elseif (wc_check_if_attribute_name_is_reserved($slug)) {
+            return new WP_Error('invalid_product_attribute_slug_reserved_name', sprintf(__('Name "%s" is not allowed because it is a reserved term. Change it, please.', 'woocommerce'), $slug), array('status' => 400));
+        } elseif (taxonomy_exists(wc_attribute_taxonomy_name($label_name))) {
+            return new WP_Error('invalid_product_attribute_slug_already_exists', sprintf(__('Name "%s" is already in use. Change it, please.', 'woocommerce'), $label_name), array('status' => 400));
+        }
+
+        $data = array(
+            'attribute_label' => $label_name,
+            'attribute_name' => $slug,
+            'attribute_type' => 'select',
+            'attribute_orderby' => 'menu_order',
+            'attribute_public' => 0, // Enable archives ==> true (or 1)
+        );
+
+        $results = $wpdb->insert("{$wpdb->prefix}woocommerce_attribute_taxonomies", $data);
+
+        if (is_wp_error($results)) {
+            return new WP_Error('cannot_create_attribute', $results->get_error_message(), array('status' => 400));
+        }
+
+        $id = $wpdb->insert_id;
+
+        do_action('woocommerce_attribute_added', $id, $data);
+
+        wp_schedule_single_event(time(), 'woocommerce_flush_rewrite_rules');
+
+        delete_transient('wc_attribute_taxonomies');
+
+        return $id;
+    }
+
+    function getAttributeIdFromName($name) {
+        global $wpdb;
+        $attribute_id = $wpdb->get_col("SELECT attribute_id FROM {$wpdb->prefix}woocommerce_attribute_taxonomies WHERE attribute_name LIKE '$name'");
+        return reset($attribute_id);
     }
 
     /**
