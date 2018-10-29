@@ -1818,12 +1818,61 @@ class Duellintegration {
                 try {
                     $duellProductId = $product['product_id'];
                     $productNumber = $product['product_number'];
+                    $productName = $product['product_name'];
 
                     $isDeleted = filter_var($product['is_deleted'], FILTER_VALIDATE_BOOLEAN);
                     $productExists = getWooCommerceProductBySku($productNumber);
 
                     if (!is_null($productExists) && !empty($productExists) && $productExists > 0) {
                         if ($isDeleted) {
+
+
+                            if (isset($product['is_parent'])) {
+                                $isParent = filter_var($product['is_parent'], FILTER_VALIDATE_BOOLEAN);
+
+                                if (!$isParent && isset($product['parent_variant']) && (int) $product['parent_variant'] > 0) {
+
+
+                                    $hasVariantDuellProductId = (int) $product['parent_variant'];
+
+
+                                    //==find duell main product
+                                    $mainProduct = get_posts(
+                                        array(
+                                            'post_type' => 'product',
+                                            'posts_per_page' => 1,
+                                            'post_status' => array('pending', 'publish', 'trash', 'draft'),
+                                            'post_parent' => 0,
+                                            'meta_query' => array(
+                                                array(
+                                                    'key' => '_duell_product_id',
+                                                    'value' => $hasVariantDuellProductId,
+                                                    'compare' => '=',
+                                                )
+                                            )
+                                        )
+                                    );
+
+                                    if (!is_null($mainProduct) && !empty($mainProduct) && isset($mainProduct[0]) && $mainProduct[0]->ID > 0) {
+                                        $mainProductId = $mainProduct[0]->ID;
+
+
+                                        $mainProductNumber = get_post_meta($mainProductId, '_sku', true);
+
+                                        $parentAttributeKeyName = 'pa_' . $mainProductNumber;
+
+                                        if (term_exists($productName, $parentAttributeKeyName)) {
+                                            $attributeTerm = get_term_by('name', $productName, $parentAttributeKeyName);
+                                            wp_delete_term($attributeTerm->term_id, $parentAttributeKeyName);
+                                        }
+                                    }
+                                    //==end
+                                }
+                            }
+
+
+
+
                             $post_id = $productExists;
                             $wpdb->update($wpdb->posts, array('post_status' => 'trash'), array('ID' => $post_id));
                         }
@@ -1849,6 +1898,9 @@ class Duellintegration {
 
 
         if (!empty($data)) {
+
+            $data = array_reverse($data);
+
             wp_defer_term_counting(true);
             wp_defer_comment_counting(true);
             foreach ($data as $product) {
@@ -2054,6 +2106,7 @@ class Duellintegration {
 
                                 //==set as variant product
                                 $setMainProductVariable = wp_set_object_terms($mainProductId, 'variable', 'product_type');
+                                update_post_meta($mainProductId, '_sold_individually', "no");
 
 
 
