@@ -1928,6 +1928,7 @@ class Duellintegration {
                     $hasVariantDuellProductId = 0;
                     $mainProduct = array();
                     $mainProductId = 0;
+                    $mainProductName = '';
                     $mainProductNumber = '';
                     if (isset($product['is_parent'])) {
                         $isParent = filter_var($product['is_parent'], FILTER_VALIDATE_BOOLEAN);
@@ -1959,6 +1960,7 @@ class Duellintegration {
                                 $mainProductId = $mainProduct[0]->ID;
                                 $allowProceed = 1;
 
+                                $mainProductName = $mainProduct[0]->post_title;
                                 $mainProductNumber = get_post_meta($mainProductId, '_sku', true);
 
 
@@ -1969,6 +1971,9 @@ class Duellintegration {
                             //==end
                         }
                     }
+
+                    $origProductName = trim(str_replace($mainProductName, '', $productName));
+
 
                     $finalPrice = 0;
                     if ($woocommerce_prices_include_tax == 'yes') {
@@ -1994,8 +1999,8 @@ class Duellintegration {
                                 'post_author' => 1,
                                 'post_content' => $description,
                                 'post_status' => $productStatus,
-                                'post_title' => $productName,
-                                'post_name' => $productName,
+                                'post_title' => $origProductName,
+                                'post_name' => $origProductName,
                                 'post_parent' => $mainProductId,
                                 'post_password' => '',
                                 'post_type' => $productType,
