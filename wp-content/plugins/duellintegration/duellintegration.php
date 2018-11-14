@@ -1859,7 +1859,10 @@ class Duellintegration {
 
                                         $mainProductNumber = get_post_meta($mainProductId, '_sku', true);
 
-                                        $parentAttributeKeyName = 'pa_' . $mainProductNumber;
+                                        //$parentAttributeKeyName = 'pa_' . $mainProductNumber;
+
+                                        $commonSlugForVariant = 'variant';
+                                        $parentAttributeKeyName = 'pa_' . $commonSlugForVariant;
 
                                         if (term_exists($productName, $parentAttributeKeyName)) {
                                             $attributeTerm = get_term_by('name', $productName, $parentAttributeKeyName);
@@ -1972,7 +1975,7 @@ class Duellintegration {
                         }
                     }
 
-                    $origProductName = trim(str_replace($mainProductName, '', $productName));
+                    $productName = $origProductName = trim(str_replace($mainProductName, '', $productName));
 
 
                     $finalPrice = 0;
@@ -2123,22 +2126,24 @@ class Duellintegration {
                                     // Success! These categories were added to the post.
                                 }
 
+                                $commonSlugForVariant = 'variant';
+
                                 //==create taxonomy and term for main product
-                                $parentAttributeKeyName = 'pa_' . $mainProductNumber;
+                                $parentAttributeKeyName = 'pa_' . $commonSlugForVariant;
 
 
                                 if (!taxonomy_exists($parentAttributeKeyName)) {
 
 
-                                    $this->createProductAttribute($mainProductNumber);
+                                    $this->createProductAttribute($commonSlugForVariant);
 
                                     $registerTaxonomy = register_taxonomy(
                                         $parentAttributeKeyName, 'product', array(
-                                        'label' => ucfirst($parentAttributeKeyName),
+                                        'label' => ucfirst($commonSlugForVariant),
                                         'hierarchical' => false,
                                         'query_var' => true,
                                         'rewrite' => array('slug' => $parentAttributeKeyName, 'with_front' => false),
-                                        'singular_label' => ucfirst($parentAttributeKeyName),
+                                        'singular_label' => ucfirst($commonSlugForVariant),
                                         )
                                     );
                                     if (is_wp_error($registerTaxonomy)) {
