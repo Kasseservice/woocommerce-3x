@@ -140,6 +140,8 @@ Synchronize products with latest prices only if `Update existing products` flag 
 
 Second step is to synchronize latest stocks from Duell only if `Stock department` is set and `Update existing products` flag is enabled. If stock greater than **`0`** and product `Manage stock?` checkbox is checked then plugin updates stock status to **`InStock`** and stock value to **`Stock`** to latest stock number.
 
+**Note:** Need to set stock to each product in Duell application. Goto in `Duell Manager` area > `Varetelling` 
+
 ### Subtract stocks from Duell Workflow
 
 Whenever a new order placed from Webshop or Admin side, plugin subtracts stocks from Duell if `Stock department` is set. 
