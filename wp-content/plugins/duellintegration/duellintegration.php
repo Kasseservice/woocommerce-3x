@@ -290,48 +290,48 @@ class Duellintegration {
 
     public function setup_action_javascript() {
         ?><script>
-            (function ($) {
-              function blockUI()
-              {
-                jQuery("#blocker").css('display', "");
-              }
-              function unblockUI()
-              {
-                jQuery("#blocker").css('display', "none");
-              }
-              var inProcess = false;
-              var $output = $('#manual-cron-output');
-              $('.manual-cron').click(function () {
-                if (inProcess == false) {
-                  inProcess = true;
-                  console.log($(this).attr('data-type'))
-                  jQuery.ajax({
-                    type: "POST",
-                    url: ajaxurl,
-                    data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
-                    cache: false,
-                    beforeSend: function () {
-                      // jQuery('#button-syncmanually').button('loading');
-                      blockUI();
-                    },
-                    complete: function () {
-                      //jQuery('#button-syncmanually').button('reset');
-                      unblockUI();
-                      inProcess = false;
-                    },
-                    success: function (data) {
-                      $output.html(data.response);
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                      $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
-                    }
-                  }).done(function (msg) {
-                    // alert("Data Saved: " + msg.response);
-                    $output.html('<code>OK</code>' + msg.response);
-                  });
-                }
-              });
-            }(jQuery));
+                    (function ($) {
+                      function blockUI()
+                      {
+                        jQuery("#blocker").css('display', "");
+                      }
+                      function unblockUI()
+                      {
+                        jQuery("#blocker").css('display', "none");
+                      }
+                      var inProcess = false;
+                      var $output = $('#manual-cron-output');
+                      $('.manual-cron').click(function () {
+                        if (inProcess == false) {
+                          inProcess = true;
+                          console.log($(this).attr('data-type'))
+                          jQuery.ajax({
+                            type: "POST",
+                            url: ajaxurl,
+                            data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
+                            cache: false,
+                            beforeSend: function () {
+                              // jQuery('#button-syncmanually').button('loading');
+                              blockUI();
+                            },
+                            complete: function () {
+                              //jQuery('#button-syncmanually').button('reset');
+                              unblockUI();
+                              inProcess = false;
+                            },
+                            success: function (data) {
+                              $output.html(data.response);
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                              $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
+                            }
+                          }).done(function (msg) {
+                            // alert("Data Saved: " + msg.response);
+                            $output.html('<code>OK</code>' + msg.response);
+                          });
+                        }
+                      });
+                    }(jQuery));
         </script>
         <?php
     }
@@ -1648,8 +1648,8 @@ class Duellintegration {
                 if (!is_null($productExists)) {
                     $post_id = $productExists;
                     update_post_meta($post_id, '_regular_price', $finalPrice);
-                    update_post_meta($post_id, '_sale_price', $finalPrice);
-                    update_post_meta($post_id, '_price', $finalPrice);
+                    //update_post_meta($post_id, '_sale_price', $finalPrice);
+                    //update_post_meta($post_id, '_price', $finalPrice);
                 }
             }
         }
@@ -2021,45 +2021,45 @@ class Duellintegration {
                             }
                         } else {
 //Update post
-                        if ($updateExistingProduct == '1' || $updateExistingProduct == 1) {
-                            $post_id = $productExists;
-                            $post = array(
-                                'ID' => $post_id,
-                                'post_title' => $productName,
-                                'post_content' => $description
-                            );
-                            wp_update_post($post);
+                            if ($updateExistingProduct == '1' || $updateExistingProduct == 1) {
+                                $post_id = $productExists;
+                                $post = array(
+                                    'ID' => $post_id,
+                                    'post_title' => $productName,
+                                    'post_content' => $description
+                                );
+                                wp_update_post($post);
+                            }
                         }
-                    }
-                    if ($post_id) {
+                        if ($post_id) {
 //$attach_id = get_post_meta($product->parent_id, "_thumbnail_id", true);
 //add_post_meta($post_id, '_thumbnail_id', $attach_id);
 // For new product only
-                        if (is_null($productExists)) {
-                            wp_set_object_terms($post_id, 'simple', 'product_type');
+                            if (is_null($productExists)) {
+                                wp_set_object_terms($post_id, 'simple', 'product_type');
 
 
 
-                            $termId = 0;
-                            $findTerm = get_term_by('name', $categoryName, 'product_cat');
+                                $termId = 0;
+                                $findTerm = get_term_by('name', $categoryName, 'product_cat');
 
-                            if (!is_null($findTerm) && !empty($findTerm)) {
-                                $termId = $findTerm->term_id;
-                            } else {
-                                if ($duellCreateNewCategory == 1 || $duellCreateNewCategory == '1') {
+                                if (!is_null($findTerm) && !empty($findTerm)) {
+                                    $termId = $findTerm->term_id;
+                                } else {
+                                    if ($duellCreateNewCategory == 1 || $duellCreateNewCategory == '1') {
 
-                                    $insertedTerm = wp_insert_term($categoryName, 'product_cat', array(
-                                        'description' => '',
-                                        'slug' => '',
-                                        'parent' => 0
-                                        )
-                                    );
+                                        $insertedTerm = wp_insert_term($categoryName, 'product_cat', array(
+                                            'description' => '',
+                                            'slug' => '',
+                                            'parent' => 0
+                                            )
+                                        );
 
-                                    if (!is_null($insertedTerm['term_id']) && $insertedTerm['term_id'] > 0) {
-                                        $termId = $insertedTerm['term_id'];
+                                        if (!is_null($insertedTerm['term_id']) && $insertedTerm['term_id'] > 0) {
+                                            $termId = $insertedTerm['term_id'];
+                                        }
                                     }
                                 }
-                            }
 
                                 if (isset($termId) && $termId > 0 && $productType == 'product') {
                                     wp_set_object_terms($post_id, $termId, 'product_cat');
@@ -2068,46 +2068,46 @@ class Duellintegration {
 
 
 
-                            update_post_meta($post_id, '_wc_review_count', "0");
-                            update_post_meta($post_id, '_wc_rating_count', array());
-                            update_post_meta($post_id, '_wc_average_rating', "0");
-                            update_post_meta($post_id, '_sku', $productNumber);
-                            update_post_meta($post_id, '_sale_price_dates_from', "");
-                            update_post_meta($post_id, '_sale_price_dates_to', "");
-                            update_post_meta($post_id, 'total_sales', '0');
-                            update_post_meta($post_id, '_tax_status', 'taxable');
+                                update_post_meta($post_id, '_wc_review_count', "0");
+                                update_post_meta($post_id, '_wc_rating_count', array());
+                                update_post_meta($post_id, '_wc_average_rating', "0");
+                                update_post_meta($post_id, '_sku', $productNumber);
+                                update_post_meta($post_id, '_sale_price_dates_from', "");
+                                update_post_meta($post_id, '_sale_price_dates_to', "");
+                                update_post_meta($post_id, 'total_sales', '0');
+                                update_post_meta($post_id, '_tax_status', 'taxable');
                                 update_post_meta($post_id, '_tax_class', $taxClass);
-                            update_post_meta($post_id, '_manage_stock', "yes");
-                            update_post_meta($post_id, '_stock_status', 'outofstock');
-                            update_post_meta($post_id, '_stock', "0");
-                            update_post_meta($post_id, '_backorders', "no");
-                            update_post_meta($post_id, '_sold_individually', "");
-                            update_post_meta($post_id, '_weight', "");
-                            update_post_meta($post_id, '_length', "");
-                            update_post_meta($post_id, '_width', "");
-                            update_post_meta($post_id, '_height', "");
-                            update_post_meta($post_id, '_upsell_ids', array());
-                            update_post_meta($post_id, '_crosssell_ids', array());
-                            update_post_meta($post_id, '_purchase_note', "");
-                            update_post_meta($post_id, '_default_attributes', array());
-                            update_post_meta($post_id, '_product_attributes', array());
-                            update_post_meta($post_id, '_virtual', 'no');
-                            update_post_meta($post_id, '_downloadable', 'no');
+                                update_post_meta($post_id, '_manage_stock', "yes");
+                                update_post_meta($post_id, '_stock_status', 'outofstock');
+                                update_post_meta($post_id, '_stock', "0");
+                                update_post_meta($post_id, '_backorders', "no");
+                                update_post_meta($post_id, '_sold_individually', "");
+                                update_post_meta($post_id, '_weight', "");
+                                update_post_meta($post_id, '_length', "");
+                                update_post_meta($post_id, '_width', "");
+                                update_post_meta($post_id, '_height', "");
+                                update_post_meta($post_id, '_upsell_ids', array());
+                                update_post_meta($post_id, '_crosssell_ids', array());
+                                update_post_meta($post_id, '_purchase_note', "");
+                                update_post_meta($post_id, '_default_attributes', array());
+                                update_post_meta($post_id, '_product_attributes', array());
+                                update_post_meta($post_id, '_virtual', 'no');
+                                update_post_meta($post_id, '_downloadable', 'no');
                                 update_post_meta($post_id, '_download_expiry', '-1');
                                 update_post_meta($post_id, '_downloadable_files', array());
                                 update_post_meta($post_id, '_download_limit', '-1');
-                            update_post_meta($post_id, '_visibility', 'visible');
-                            update_post_meta($post_id, '_featured', "no");
+                                update_post_meta($post_id, '_visibility', 'visible');
+                                update_post_meta($post_id, '_featured', "no");
                                 update_post_meta($post_id, '_product_image_gallery', "");
-                            update_post_meta($post_id, '_duell_product_id', $duellProductId);
+                                update_post_meta($post_id, '_duell_product_id', $duellProductId);
 
-                            update_post_meta($post_id, '_regular_price', $finalPrice);
-                            update_post_meta($post_id, '_sale_price', $finalPrice);
-                            update_post_meta($post_id, '_price', $finalPrice);
-                        }
-                        if (is_null($productExists) || ($updateExistingProduct == '1' || $updateExistingProduct == 1)) {
-                            update_post_meta($post_id, '_barcode', $barcode);
-                        }
+                                update_post_meta($post_id, '_regular_price', $finalPrice);
+                                update_post_meta($post_id, '_sale_price', 0);
+                                update_post_meta($post_id, '_price', 0);
+                            }
+                            if (is_null($productExists) || ($updateExistingProduct == '1' || $updateExistingProduct == 1)) {
+                                update_post_meta($post_id, '_barcode', $barcode);
+                            }
                             //==set main product to variable product and clear the transients for main product
                             if ($mainProductId > 0) {
 
