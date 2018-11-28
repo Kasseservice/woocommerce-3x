@@ -290,48 +290,48 @@ class Duellintegration {
 
     public function setup_action_javascript() {
         ?><script>
-                    (function ($) {
-                      function blockUI()
-                      {
-                        jQuery("#blocker").css('display', "");
-                      }
-                      function unblockUI()
-                      {
-                        jQuery("#blocker").css('display', "none");
-                      }
-                      var inProcess = false;
-                      var $output = $('#manual-cron-output');
-                      $('.manual-cron').click(function () {
-                        if (inProcess == false) {
-                          inProcess = true;
-                          console.log($(this).attr('data-type'))
-                          jQuery.ajax({
-                            type: "POST",
-                            url: ajaxurl,
-                            data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
-                            cache: false,
-                            beforeSend: function () {
-                              // jQuery('#button-syncmanually').button('loading');
-                              blockUI();
-                            },
-                            complete: function () {
-                              //jQuery('#button-syncmanually').button('reset');
-                              unblockUI();
-                              inProcess = false;
-                            },
-                            success: function (data) {
-                              $output.html(data.response);
-                            },
-                            error: function (jqXHR, textStatus, errorThrown) {
-                              $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
-                            }
-                          }).done(function (msg) {
-                            // alert("Data Saved: " + msg.response);
-                            $output.html('<code>OK</code>' + msg.response);
-                          });
-                        }
-                      });
-                    }(jQuery));
+            (function ($) {
+              function blockUI()
+              {
+                jQuery("#blocker").css('display', "");
+              }
+              function unblockUI()
+              {
+                jQuery("#blocker").css('display', "none");
+              }
+              var inProcess = false;
+              var $output = $('#manual-cron-output');
+              $('.manual-cron').click(function () {
+                if (inProcess == false) {
+                  inProcess = true;
+                  console.log($(this).attr('data-type'))
+                  jQuery.ajax({
+                    type: "POST",
+                    url: ajaxurl,
+                    data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
+                    cache: false,
+                    beforeSend: function () {
+                      // jQuery('#button-syncmanually').button('loading');
+                      blockUI();
+                    },
+                    complete: function () {
+                      //jQuery('#button-syncmanually').button('reset');
+                      unblockUI();
+                      inProcess = false;
+                    },
+                    success: function (data) {
+                      $output.html(data.response);
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                      $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
+                    }
+                  }).done(function (msg) {
+                    // alert("Data Saved: " + msg.response);
+                    $output.html('<code>OK</code>' + msg.response);
+                  });
+                }
+              });
+            }(jQuery));
         </script>
         <?php
     }
@@ -2102,8 +2102,8 @@ class Duellintegration {
                                 update_post_meta($post_id, '_duell_product_id', $duellProductId);
 
                                 update_post_meta($post_id, '_regular_price', $finalPrice);
-                                update_post_meta($post_id, '_sale_price', 0);
-                                update_post_meta($post_id, '_price', 0);
+                                update_post_meta($post_id, '_sale_price', '');
+                                update_post_meta($post_id, '_price', '');
                             }
                             if (is_null($productExists) || ($updateExistingProduct == '1' || $updateExistingProduct == 1)) {
                                 update_post_meta($post_id, '_barcode', $barcode);
