@@ -467,9 +467,11 @@ if (!function_exists('callDuell')) {
             }
             curl_close($curl);
             if ($content_type == 'json') {
-                $encoding = mb_detect_encoding($result);
-                if ($encoding == 'UTF-8') {
-                    $result = preg_replace('/[^(\x20-\x7F)]*/', '', $result);
+                if (function_exists('mb_detect_encoding')) {
+                    $encoding = mb_detect_encoding($result);
+                    if ($encoding == 'UTF-8') {
+                        $result = preg_replace('/[^(\x20-\x7F)]*/', '', $result);
+                    }
                 }
                 $res = json_decode($result, true);
                 if (empty($res)) {
