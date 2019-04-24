@@ -290,48 +290,48 @@ class Duellintegration {
 
     public function setup_action_javascript() {
         ?><script>
-            (function ($) {
-              function blockUI()
-              {
-                jQuery("#blocker").css('display', "");
-              }
-              function unblockUI()
-              {
-                jQuery("#blocker").css('display', "none");
-              }
-              var inProcess = false;
-              var $output = $('#manual-cron-output');
-              $('.manual-cron').click(function () {
-                if (inProcess == false) {
-                  inProcess = true;
-                  console.log($(this).attr('data-type'))
-                  jQuery.ajax({
-                    type: "POST",
-                    url: ajaxurl,
-                    data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
-                    cache: false,
-                    beforeSend: function () {
-                      // jQuery('#button-syncmanually').button('loading');
-                      blockUI();
-                    },
-                    complete: function () {
-                      //jQuery('#button-syncmanually').button('reset');
-                      unblockUI();
-                      inProcess = false;
-                    },
-                    success: function (data) {
-                      $output.html(data.response);
-                    },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                      $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
-                    }
-                  }).done(function (msg) {
-                    // alert("Data Saved: " + msg.response);
-                    $output.html('<code>OK</code>' + msg.response);
-                  });
-                }
-              });
-            }(jQuery));
+                    (function ($) {
+                      function blockUI()
+                      {
+                        jQuery("#blocker").css('display', "");
+                      }
+                      function unblockUI()
+                      {
+                        jQuery("#blocker").css('display', "none");
+                      }
+                      var inProcess = false;
+                      var $output = $('#manual-cron-output');
+                      $('.manual-cron').click(function () {
+                        if (inProcess == false) {
+                          inProcess = true;
+                          console.log($(this).attr('data-type'))
+                          jQuery.ajax({
+                            type: "POST",
+                            url: ajaxurl,
+                            data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
+                            cache: false,
+                            beforeSend: function () {
+                              // jQuery('#button-syncmanually').button('loading');
+                              blockUI();
+                            },
+                            complete: function () {
+                              //jQuery('#button-syncmanually').button('reset');
+                              unblockUI();
+                              inProcess = false;
+                            },
+                            success: function (data) {
+                              $output.html(data.response);
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                              $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
+                            }
+                          }).done(function (msg) {
+                            // alert("Data Saved: " + msg.response);
+                            $output.html('<code>OK</code>' + msg.response);
+                          });
+                        }
+                      });
+                    }(jQuery));
         </script>
         <?php
     }
@@ -386,7 +386,7 @@ class Duellintegration {
                 'uid' => 'duellintegration_client_number',
                 'label' => __('Client Number', 'duellintegration'),
                 'section' => 'duell_configuration_section',
-                'type' => 'number',
+                'type' => 'text',
                 'placeholder' => __('Client Number', 'duellintegration'),
                 'class' => "",
                 'default' => '',
@@ -765,7 +765,7 @@ class Duellintegration {
         $response['message'] = 'All orders are synced.';
         try {
             $duellIntegrationStatus = get_option('duellintegration_integration_status');
-            $duellClientNumber = (int) get_option('duellintegration_client_number');
+            $duellClientNumber = get_option('duellintegration_client_number');
             $duellClientToken = get_option('duellintegration_client_token');
             $duellOrderDepartmentToken = get_option('duellintegration_order_department_token');
 
@@ -1347,7 +1347,7 @@ class Duellintegration {
         }
         try {
             $duellIntegrationStatus = get_option('duellintegration_integration_status');
-            $duellClientNumber = (int) get_option('duellintegration_client_number');
+            $duellClientNumber = get_option('duellintegration_client_number');
             $duellClientToken = get_option('duellintegration_client_token');
             $duellStockDepartmentToken = get_option('duellintegration_stock_department_token');
             if ($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') {
@@ -1413,7 +1413,7 @@ class Duellintegration {
         $response['message'] = 'Webservice is temporary unavailable. Please try again.';
         try {
             $duellIntegrationStatus = get_option('duellintegration_integration_status');
-            $duellClientNumber = (int) get_option('duellintegration_client_number');
+            $duellClientNumber = get_option('duellintegration_client_number');
             $duellClientToken = get_option('duellintegration_client_token');
             $duellStockDepartmentToken = get_option('duellintegration_stock_department_token');
 
@@ -1539,7 +1539,7 @@ class Duellintegration {
         $response['message'] = 'Webservice is temporary unavailable. Please try again.';
         try {
             $duellIntegrationStatus = get_option('duellintegration_integration_status');
-            $duellClientNumber = (int) get_option('duellintegration_client_number');
+            $duellClientNumber = get_option('duellintegration_client_number');
             $duellClientToken = get_option('duellintegration_client_token');
 
             $duellUpdateExistingProduct = get_option('duellintegration_update_existing_product_price');
@@ -1662,7 +1662,7 @@ class Duellintegration {
         $response['message'] = 'Webservice is temporary unavailable. Please try again.';
         try {
             $duellIntegrationStatus = get_option('duellintegration_integration_status');
-            $duellClientNumber = (int) get_option('duellintegration_client_number');
+            $duellClientNumber = get_option('duellintegration_client_number');
             $duellClientToken = get_option('duellintegration_client_token');
             if (($duellIntegrationStatus == 1 || $duellIntegrationStatus == '1') || $type == "manual") {
                 if ($duellClientNumber <= 0) {
