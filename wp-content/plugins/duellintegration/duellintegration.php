@@ -290,48 +290,48 @@ class Duellintegration {
 
     public function setup_action_javascript() {
         ?><script>
-                    (function ($) {
-                      function blockUI()
-                      {
-                        jQuery("#blocker").css('display', "");
-                      }
-                      function unblockUI()
-                      {
-                        jQuery("#blocker").css('display', "none");
-                      }
-                      var inProcess = false;
-                      var $output = $('#manual-cron-output');
-                      $('.manual-cron').click(function () {
-                        if (inProcess == false) {
-                          inProcess = true;
-                          console.log($(this).attr('data-type'))
-                          jQuery.ajax({
-                            type: "POST",
-                            url: ajaxurl,
-                            data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
-                            cache: false,
-                            beforeSend: function () {
-                              // jQuery('#button-syncmanually').button('loading');
-                              blockUI();
-                            },
-                            complete: function () {
-                              //jQuery('#button-syncmanually').button('reset');
-                              unblockUI();
-                              inProcess = false;
-                            },
-                            success: function (data) {
-                              $output.html(data.response);
-                            },
-                            error: function (jqXHR, textStatus, errorThrown) {
-                              $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
-                            }
-                          }).done(function (msg) {
-                            // alert("Data Saved: " + msg.response);
-                            $output.html('<code>OK</code>' + msg.response);
-                          });
-                        }
-                      });
-                    }(jQuery));
+            (function ($) {
+              function blockUI()
+              {
+                jQuery("#blocker").css('display', "");
+              }
+              function unblockUI()
+              {
+                jQuery("#blocker").css('display', "none");
+              }
+              var inProcess = false;
+              var $output = $('#manual-cron-output');
+              $('.manual-cron').click(function () {
+                if (inProcess == false) {
+                  inProcess = true;
+                  console.log($(this).attr('data-type'))
+                  jQuery.ajax({
+                    type: "POST",
+                    url: ajaxurl,
+                    data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
+                    cache: false,
+                    beforeSend: function () {
+                      // jQuery('#button-syncmanually').button('loading');
+                      blockUI();
+                    },
+                    complete: function () {
+                      //jQuery('#button-syncmanually').button('reset');
+                      unblockUI();
+                      inProcess = false;
+                    },
+                    success: function (data) {
+                      $output.html(data.response);
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                      $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
+                    }
+                  }).done(function (msg) {
+                    // alert("Data Saved: " + msg.response);
+                    $output.html('<code>OK</code>' + msg.response);
+                  });
+                }
+              });
+            }(jQuery));
         </script>
         <?php
     }
@@ -1920,6 +1920,7 @@ class Duellintegration {
                     $costPrice = $product['cost_price'];
                     $priceIncTax = $product['price_inc_vat'];
                     $isDeleted = $product['is_deleted'];
+                    $productImage = $product['product_image'];
 
                     $allowProceed = 1;
                     $productStatus = "pending";
@@ -2107,6 +2108,56 @@ class Duellintegration {
                             }
                             if (is_null($productExists) || ($updateExistingProduct == '1' || $updateExistingProduct == 1)) {
                                 update_post_meta($post_id, '_barcode', $barcode);
+
+                                //==save image code
+                                if ($productImage != '') {
+                                    write_log('Procced data: Have image product ' . $productNumber, true);
+
+
+                                    $dirpath = WP_CONTENT_DIR . '/uploads/' . date('Y') . '/' . date('m') . '/';
+
+                                    if (!file_exists($dirpath)) {
+                                        mkdir($dirpath, 0755, true);
+                                    }
+
+                                    $imageName = basename($productImage);
+
+
+                                    $productImageContents = file_get_contents($productImage);
+                                    $productImageSavefile = fopen($dirpath . $imageName, 'w');
+                                    fwrite($productImageSavefile, $productImageContents);
+                                    fclose($productImageSavefile);
+
+                                    if (file_exists($dirpath . $imageName)) {
+
+                                        write_log('Procced data: Image exists product ' . $productNumber, true);
+
+
+                                        $wp_filetype = wp_check_filetype($imageName, null);
+
+                                        $attachment = array(
+                                            'post_mime_type' => $wp_filetype['type'],
+                                            'post_title' => $imageName,
+                                            'post_content' => '',
+                                            'post_status' => 'inherit'
+                                        );
+
+                                        $attach_id = wp_insert_attachment($attachment, $dirpath . $imageName);
+
+                                        write_log('Procced data: Attach id exists product ' . $productNumber . ' ' . $attach_id, true);
+
+                                        $imagenew = get_post($attach_id);
+                                        $fullsizepath = get_attached_file($imagenew->ID);
+                                        $attach_data = wp_generate_attachment_metadata($attach_id, $fullsizepath);
+                                        wp_update_attachment_metadata($attach_id, $attach_data);
+
+                                        set_post_thumbnail($post_id, $attach_id);
+                                        update_post_meta($post_id, '_product_image_gallery', $attach_id);
+
+                                        unlink($dirpath . $imageName);
+                                    }
+                                }
+                                //==end image code
                             }
                             //==set main product to variable product and clear the transients for main product
                             if ($mainProductId > 0) {
