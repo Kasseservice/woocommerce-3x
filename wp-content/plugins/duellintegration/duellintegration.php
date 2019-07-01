@@ -1635,6 +1635,7 @@ class Duellintegration {
                 $productNumber = $product['product_number'];
                 $vatratePercentage = $product['vatrate_percent'];
                 $costPrice = $product['cost_price'];
+                $specialPrice = $product['special_price'];
                 $priceIncTax = $product['price_inc_vat'];
                 $finalPrice = 0;
                 if ($woocommerce_prices_include_tax == 'yes') {
@@ -1648,8 +1649,8 @@ class Duellintegration {
                 if (!is_null($productExists)) {
                     $post_id = $productExists;
                     update_post_meta($post_id, '_regular_price', $finalPrice);
-                    //update_post_meta($post_id, '_sale_price', $finalPrice);
-                    //update_post_meta($post_id, '_price', $finalPrice);
+                    update_post_meta($post_id, '_sale_price', $specialPrice);
+                    update_post_meta($post_id, '_price', $finalPrice);
                 }
             }
         }
@@ -1911,13 +1912,14 @@ class Duellintegration {
                     $duellProductId = $product['product_id'];
                     $productNumber = $product['product_number'];
                     $relatedProductId = $product['related_product_id'];
-                    $productName = $product['product_name'];
+                    $postedName = $productName = $product['product_name'];
                     $description = $product['description'];
                     $barcode = $product['barcode'];
                     $categoryId = $product['category_id'];
                     $categoryName = $product['category_name'];
                     $vatratePercentage = $product['vatrate_percent'];
                     $costPrice = $product['cost_price'];
+                    $specialPrice = $product['special_price'];
                     $priceIncTax = $product['price_inc_vat'];
                     $isDeleted = $product['is_deleted'];
                     $productImage = $product['product_image'];
@@ -2026,7 +2028,7 @@ class Duellintegration {
                                 $post_id = $productExists;
                                 $post = array(
                                     'ID' => $post_id,
-                                    'post_title' => $productName,
+                                    'post_title' => $postedName,
                                     'post_content' => $description
                                 );
                                 wp_update_post($post);
@@ -2103,11 +2105,15 @@ class Duellintegration {
                                 update_post_meta($post_id, '_duell_product_id', $duellProductId);
 
                                 update_post_meta($post_id, '_regular_price', $finalPrice);
-                                update_post_meta($post_id, '_sale_price', '');
-                                update_post_meta($post_id, '_price', '');
+                                //update_post_meta($post_id, '_sale_price', $specialPrice);
+                                update_post_meta($post_id, '_price', $finalPrice);
                             }
                             if (is_null($productExists) || ($updateExistingProduct == '1' || $updateExistingProduct == 1)) {
                                 update_post_meta($post_id, '_barcode', $barcode);
+
+                                update_post_meta($post_id, '_sale_price', $specialPrice);
+                                update_post_meta($post_id, '_duell_sku', $productNumber);
+                                update_post_meta($post_id, '_duell_product_id', $duellProductId);
 
                                 //==save image code
                                 if ($productImage != '') {
@@ -2144,17 +2150,17 @@ class Duellintegration {
 
                                         $attach_id = wp_insert_attachment($attachment, $dirpath . $imageName);
 
-                                        write_log('Procced data: Attach id exists product ' . $productNumber . ' ' . $attach_id, true);
+                                        write_log('Procced data: Attach id exists product ' . $barcode . ' ' . $attach_id, true);
+                                        if ($attach_id > 0) {
+                                            $imagenew = get_post($attach_id);
+                                            $fullsizepath = get_attached_file($imagenew->ID);
+                                            $attach_data = wp_generate_attachment_metadata($attach_id, $fullsizepath);
+                                            wp_update_attachment_metadata($attach_id, $attach_data);
 
-                                        $imagenew = get_post($attach_id);
-                                        $fullsizepath = get_attached_file($imagenew->ID);
-                                        $attach_data = wp_generate_attachment_metadata($attach_id, $fullsizepath);
-                                        wp_update_attachment_metadata($attach_id, $attach_data);
-
-                                        set_post_thumbnail($post_id, $attach_id);
-                                        update_post_meta($post_id, '_product_image_gallery', $attach_id);
-
-                                        unlink($dirpath . $imageName);
+                                            set_post_thumbnail($post_id, $attach_id);
+                                            update_post_meta($post_id, '_product_image_gallery', $attach_id);
+                                        }
+                                        //unlink($dirpath . $imageName);
                                     }
                                 }
                                 //==end image code
