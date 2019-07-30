@@ -60,7 +60,7 @@ if (!function_exists('getWooCommerceOrderProductsById')) {
                 $taxes = $_tax->get_rates($product->get_tax_class());
                 $rates = array_shift($taxes);
                 //Take only the item rate and round it.
-                $item_tax_rate = round(array_shift($rates));
+                $item_tax_rate = (!is_null($rates) && is_array($rates)) ? round(array_shift($rates)) : 0.00;
             }
             $order_data['line_items'][] = array(
                 'id' => $item_id,
@@ -181,7 +181,7 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
                 $taxes = $_tax->get_rates($product->get_tax_class());
                 $rates = array_shift($taxes);
                 //Take only the item rate and round it.
-                $item_tax_rate = round(array_shift($rates));
+                $item_tax_rate = (!is_null($rates) && is_array($rates)) ? round(array_shift($rates)) : 0.00;
             }
             $order_data['line_items'][] = array(
                 'id' => $item_id,

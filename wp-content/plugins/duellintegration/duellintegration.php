@@ -290,48 +290,48 @@ class Duellintegration {
 
     public function setup_action_javascript() {
         ?><script>
-                    (function ($) {
-                      function blockUI()
-                      {
-                        jQuery("#blocker").css('display', "");
-                      }
-                      function unblockUI()
-                      {
-                        jQuery("#blocker").css('display', "none");
-                      }
-                      var inProcess = false;
-                      var $output = $('#manual-cron-output');
-                      $('.manual-cron').click(function () {
-                        if (inProcess == false) {
-                          inProcess = true;
-                          console.log($(this).attr('data-type'))
-                          jQuery.ajax({
-                            type: "POST",
-                            url: ajaxurl,
-                            data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
-                            cache: false,
-                            beforeSend: function () {
-                              // jQuery('#button-syncmanually').button('loading');
-                              blockUI();
-                            },
-                            complete: function () {
-                              //jQuery('#button-syncmanually').button('reset');
-                              unblockUI();
-                              inProcess = false;
-                            },
-                            success: function (data) {
-                              $output.html(data.response);
-                            },
-                            error: function (jqXHR, textStatus, errorThrown) {
-                              $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
-                            }
-                          }).done(function (msg) {
-                            // alert("Data Saved: " + msg.response);
-                            $output.html('<code>OK</code>' + msg.response);
-                          });
-                        }
-                      });
-                    }(jQuery));
+            (function ($) {
+              function blockUI()
+              {
+                jQuery("#blocker").css('display', "");
+              }
+              function unblockUI()
+              {
+                jQuery("#blocker").css('display', "none");
+              }
+              var inProcess = false;
+              var $output = $('#manual-cron-output');
+              $('.manual-cron').click(function () {
+                if (inProcess == false) {
+                  inProcess = true;
+                  console.log($(this).attr('data-type'))
+                  jQuery.ajax({
+                    type: "POST",
+                    url: ajaxurl,
+                    data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
+                    cache: false,
+                    beforeSend: function () {
+                      // jQuery('#button-syncmanually').button('loading');
+                      blockUI();
+                    },
+                    complete: function () {
+                      //jQuery('#button-syncmanually').button('reset');
+                      unblockUI();
+                      inProcess = false;
+                    },
+                    success: function (data) {
+                      $output.html(data.response);
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                      $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
+                    }
+                  }).done(function (msg) {
+                    // alert("Data Saved: " + msg.response);
+                    $output.html('<code>OK</code>' + msg.response);
+                  });
+                }
+              });
+            }(jQuery));
         </script>
         <?php
     }
@@ -824,21 +824,21 @@ class Duellintegration {
                     $lastSyncDate = date('Y-m-d H:i:s', strtotime($orderLastSyncDate));
                 }
 //get all post with   post_type=shop_order
-                $sql = "SELECT wp_posts.ID,wp_posts.post_date FROM wp_posts ";
-                $sql .= " LEFT JOIN wp_postmeta ON (wp_posts.ID = wp_postmeta.post_id AND wp_postmeta.meta_key = '_duell_order_id' ) ";
-                $sql .= " LEFT JOIN wp_postmeta AS mt1 ON ( wp_posts.ID = mt1.post_id ) ";
+                $sql = "SELECT " . $wpdb->prefix . "posts.ID," . $wpdb->prefix . "posts.post_date FROM " . $wpdb->prefix . "posts ";
+                $sql .= " LEFT JOIN " . $wpdb->prefix . "postmeta ON (" . $wpdb->prefix . "posts.ID = " . $wpdb->prefix . "postmeta.post_id AND " . $wpdb->prefix . "postmeta.meta_key = '_duell_order_id' ) ";
+                $sql .= " LEFT JOIN " . $wpdb->prefix . "postmeta AS mt1 ON ( " . $wpdb->prefix . "posts.ID = mt1.post_id ) ";
                 if ($lastSyncDate != '') {
-                    //$sql .= " LEFT JOIN wp_postmeta as mt2 ON (wp_posts.ID = mt2.post_id AND mt2.meta_key = '_completed_date' ) ";
+                    //$sql .= " LEFT JOIN " . $wpdb->prefix . "postmeta as mt2 ON (" . $wpdb->prefix . "posts.ID = mt2.post_id AND mt2.meta_key = '_completed_date' ) ";
                 }
                 $sql .= " WHERE 1=1 ";
-                $sql .= " AND wp_posts.post_type = 'shop_order' AND wp_posts.post_status = '" . $duellOrderSyncStatus . "' AND wp_posts.ID >= " . $duellOrderStartFrom;
+                $sql .= " AND " . $wpdb->prefix . "posts.post_type = 'shop_order' AND " . $wpdb->prefix . "posts.post_status = '" . $duellOrderSyncStatus . "' AND " . $wpdb->prefix . "posts.ID >= " . $duellOrderStartFrom;
                 $sql .= " AND ( ";
-                $sql .= " wp_postmeta.post_id IS NULL OR ( mt1.meta_key = '_duell_order_id' AND mt1.meta_value IS NULL )  OR  ( mt1.meta_key = '_duell_order_id' AND mt1.meta_value = '' ) ";
+                $sql .= " " . $wpdb->prefix . "postmeta.post_id IS NULL OR ( mt1.meta_key = '_duell_order_id' AND mt1.meta_value IS NULL )  OR  ( mt1.meta_key = '_duell_order_id' AND mt1.meta_value = '' ) ";
                 $sql .= " ) ";
                 if ($lastSyncDate != '') {
                     //$sql .= " AND ( STR_TO_DATE(mt2.meta_value, '%Y-%m-%d %H:%i') >= '" . date('Y-m-d H:i', strtotime($lastSyncDate)) . "' ) ";
                 }
-                $sql .= " GROUP BY wp_posts.ID ORDER BY wp_posts.ID ASC";
+                $sql .= " GROUP BY " . $wpdb->prefix . "posts.ID ORDER BY " . $wpdb->prefix . "posts.ID ASC";
 
                 $fetchNonSyncedOrders = $wpdb->get_results($sql, ARRAY_A);
                 $prepareOrderData = array();
@@ -901,7 +901,7 @@ class Duellintegration {
                                     'primary_address' => $orderBillingInfo['address_1'],
                                     'primary_zip' => $orderBillingInfo['postcode'],
                                     'city' => $orderBillingInfo['city']);
-                                $notSyncCustomerOrderData[$orderBillingInfo['email']][] = array('order_id' => $orderId);
+                                $notSyncCustomerOrderData[$customerKey][] = array('order_id' => $orderId);
                             }
                             foreach ($orderDetailData['line_items'] as $orderLine) {
                                 $orderProduct = array();
