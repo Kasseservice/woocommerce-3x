@@ -60,7 +60,7 @@ if (!function_exists('getWooCommerceOrderProductsById')) {
                 $taxes = $_tax->get_rates($product->get_tax_class());
                 $rates = array_shift($taxes);
                 //Take only the item rate and round it.
-                $item_tax_rate = (!is_null($rates) && is_array($rates)) ? round(array_shift($rates)) : 0.00;
+                $item_tax_rate = (!is_null($rates) && is_array($rates)) ? round(array_shift($rates)) : 25.00;
             }
             $order_data['line_items'][] = array(
                 'id' => $item_id,
@@ -181,7 +181,7 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
                 $taxes = $_tax->get_rates($product->get_tax_class());
                 $rates = array_shift($taxes);
                 //Take only the item rate and round it.
-                $item_tax_rate = (!is_null($rates) && is_array($rates)) ? round(array_shift($rates)) : 0.00;
+                $item_tax_rate = (!is_null($rates) && is_array($rates)) ? round(array_shift($rates)) : 25.00;
             }
             $order_data['line_items'][] = array(
                 'id' => $item_id,
@@ -467,12 +467,12 @@ if (!function_exists('callDuell')) {
             }
             curl_close($curl);
             if ($content_type == 'json') {
-                if (function_exists('mb_detect_encoding')) {
+                /*if (function_exists('mb_detect_encoding')) {
                     $encoding = mb_detect_encoding($result);
                     if ($encoding == 'UTF-8') {
                         $result = preg_replace('/[^(\x20-\x7F)]*/', '', $result);
                     }
-                }
+                }*/
                 $res = json_decode($result, true);
                 if (empty($res)) {
                     $res['code'] = 100010;
