@@ -75,13 +75,14 @@ if (!function_exists('getWooCommerceOrderProductsById')) {
                 'name' => $item['name'],
                 'product_id' => (!empty($item->get_variation_id()) && ('product_variation' === $product->post_type )) ? $product->get_parent_id() : $product_id,
                 'variation_id' => (!empty($item->get_variation_id()) && ('product_variation' === $product->post_type )) ? $product_id : 0,
+                'duell_product_number' => !is_null($product_id) ? get_post_meta($product_id, '_duell_sku', true) : 0,
                 'product_url' => get_permalink($product_id),
                 'product_thumbnail_url' => wp_get_attachment_image_src(get_post_thumbnail_id($product_id), 'thumbnail', TRUE)[0],
                 'sku' => $product_sku,
-                'meta' => wc_display_item_meta($item, array('echo' => false))
+                'meta' => wc_display_item_meta($item, array('echo' => false, 'before' => "\n- ", 'after' => '', 'separator' => "\n- "))
             );
         }
-        return array('order' => apply_filters('woocommerce_api_order_response', $order_data, $order, $fields));
+        return array('order' => apply_filters('woocommerce_api_order_response', $order_data, $order, $fields, ''));
     }
 
 }
@@ -199,8 +200,9 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
                 'product_url' => get_permalink($product_id),
                 'product_thumbnail_url' => wp_get_attachment_image_src(get_post_thumbnail_id($product_id), 'thumbnail', TRUE)[0],
                 'sku' => $product_sku,
-                'meta' => wc_display_item_meta($item, array('echo' => false)),
+                'meta' => wc_display_item_meta($item, array('echo' => false, 'before' => "\n- ", 'after' => '', 'separator' => "\n- ")),
                 'duell_product_id' => !is_null($product_id) ? get_post_meta($product_id, '_duell_product_id', true) : 0,
+                'duell_product_number' => !is_null($product_id) ? get_post_meta($product_id, '_duell_sku', true) : 0,
                 'category_id' => $category_id,
                 'category_name' => $category_name,
                 'duell_category_id' => !is_null($duell_category_id) ? $duell_category_id : 0,
@@ -244,7 +246,7 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
                 'amount' => wc_format_decimal($coupon_item['discount_amount'], $dp),
             );
         }
-        return array('order' => apply_filters('woocommerce_api_order_response', $order_data, $order, $fields));
+        return array('order' => apply_filters('woocommerce_api_order_response', $order_data, $order, $fields, ''));
     }
 
 }
@@ -260,6 +262,20 @@ if (!function_exists('getWooCommerceProductBySku')) {
     }
 
 }
+if (!function_exists('getWooCommerceProductByDuellProductNumber')) {
+
+    function getWooCommerceProductByDuellProductNumber($sku) {
+        global $wpdb;
+        $product_id = $wpdb->get_var($wpdb->prepare("SELECT post_id FROM $wpdb->postmeta WHERE meta_key='_duell_sku' AND meta_value='%s' LIMIT 1", $sku));
+        if ($product_id) {
+            return $product_id;
+        }
+        return null;
+    }
+
+}
+
+
 if (!function_exists('duellLoginApi')) {
 
     function duellLoginApi($action, $method = 'POST', $data = array(), $content_type = 'json', $type = 'manual') {
@@ -467,7 +483,6 @@ if (!function_exists('callDuell')) {
             }
             curl_close($curl);
             if ($content_type == 'json') {
-
                 $res = json_decode($result, true);
                 if (empty($res)) {
                     $res['code'] = 100010;
@@ -475,7 +490,7 @@ if (!function_exists('callDuell')) {
                     $res['message'] = 'Webservice is temporary unavailable. Please try again.';
                     write_log('call() - Result json_decode is not proper');
                 } else {
-                    if ($res['status'] === true) {
+                    if (isset($res['status']) && $res['status'] === true) {
 
                     } else {
                         $result_code = '';
