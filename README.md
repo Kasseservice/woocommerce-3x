@@ -85,7 +85,11 @@ On Wordpress Admin
 
 * **Order Department:** Copy the department token in which Woocommerce order save.
 * **Start from Order No.:** Enter the order number from which start sending to Duell.
-* **Order Status:** Select the which status orders sends to Duell.
+* **Save as customer order:** If flag is enabled, Order save as customer order and link with sales order else only register as sales order
+* **Send Order Status:** Select the which status orders sends to Duell.
+* **Update Send Order to Status:** Update status of order once sync with Duell. Only applicable if save as customer order is enable.
+* **Fetch Order Status:** Select Duell customer order status, Order update sync will fetch customer orders from Duell and match order status with selected status. If match then update status of order to "Update Order Status". Only applicable if save as customer order is enable.
+* **Update Order Status:** Update status of order once order update sync match status with Duell. Only applicable if save as customer order is enable.
 * **Create new products:** If flag is enabled, only create new products to Duell, otherwise exclude the order.
 
 ### Step 5: Setup cron job manually 
@@ -157,14 +161,25 @@ Whenever a new order placed from Webshop or Admin side, plugin subtracts stocks 
 
 ### Orders Sync Workflow
 
+#### As sales order
 * Orders are synchronize only if `Order department` is set.
 * Orders are start sync from the entered order number in `Start from orde No.` field. 
-* Only selected status orders are synced `Order status`. If `Dont Sync` is selected then it will not sync.
+* Only selected status orders are synced `Send Order status`. If `Dont Sync` is selected then it will not sync.
 * Plugin creates new products to Duell if `Create new product` is enabled, otherwise exclude the orders.
 * Plugin adds **`SHIPPING`** price as a product in Duell on order sync.
 * Plugin adds all new products under category `Diverse` in Duell.
 * Plugin adds an extra column (**Duell Order No.**) in Woocommerce admin order list page. User can search Duell order number from search box.
 
+#### As customer order
+* Orders are synchronize only if `Order department` is set.
+* Orders are start sync from the entered order number in `Start from orde No.` field. 
+* Only selected status orders are synced `Send Order status`. If `Dont Sync` is selected then it will not sync.
+* Synced order status updated to selected woocommerce order status `Update Send Order to Status`. If `Dont Sync` is selected then it will not sync.
+* Update order status sync will match customer order status to selected Duell customer order status `Fetch Order Status`. If Duell order status and selected order status match then it will update the order status to selected status `Update Order Status`. If `Dont Sync` is selected then it will not sync.
+* Plugin creates new products to Duell if `Create new product` is enabled, otherwise exclude the orders.
+* Plugin adds **`SHIPPING`** price as a product in Duell on order sync.
+* Plugin adds all new products under category `Diverse` in Duell.
+* Plugin adds an extra column (**Duell Order No.**) in Woocommerce admin order list page. User can search Duell order number from search box.
 
 Recommended Tools
 -------
