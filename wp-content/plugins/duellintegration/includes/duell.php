@@ -76,6 +76,7 @@ if (!function_exists('getWooCommerceOrderProductsById')) {
                 'product_id' => (!empty($item->get_variation_id()) && ('product_variation' === $product->post_type )) ? $product->get_parent_id() : $product_id,
                 'variation_id' => (!empty($item->get_variation_id()) && ('product_variation' === $product->post_type )) ? $product_id : 0,
                 'duell_product_number' => !is_null($product_id) ? get_post_meta($product_id, '_duell_sku', true) : 0,
+                'duell_product_id' => !is_null($product_id) ? get_post_meta($product_id, '_duell_product_id', true) : 0,
                 'product_url' => get_permalink($product_id),
                 'product_thumbnail_url' => wp_get_attachment_image_src(get_post_thumbnail_id($product_id), 'thumbnail', TRUE)[0],
                 'sku' => $product_sku,
@@ -344,7 +345,7 @@ if (!function_exists('duellLoginApi')) {
                     write_log('loginApi() - Result json_decode is not proper');
                 } else {
                     if ($res['status'] === true) {
-
+                        
                     } else {
                         $result_code = '';
                         if (isset($res['code']) && $res['code'] != '') {
@@ -491,7 +492,7 @@ if (!function_exists('callDuell')) {
                     write_log('call() - Result json_decode is not proper');
                 } else {
                     if (isset($res['status']) && $res['status'] === true) {
-
+                        
                     } else {
                         $result_code = '';
                         if (isset($res['code']) && $res['code'] != '') {
