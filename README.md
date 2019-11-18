@@ -138,7 +138,9 @@ Synchronize products with latest prices only if `Update existing products` flag 
   * **`Yes, I will enter prices inclusive of tax`:** Adds price inclusive tax.
   * **`No, I will enter prices exclusive of tax`:** Adds price exclusive tax. Woocommerce add tax based on flag **`Enable tax rates and calculations`** and configured tax. If tax flag enabled then Woocommerce apply tax based on setting in **`Tax`** tab.
 
-**NOTE:** Once product sync and then if there is change in change Woocommerce settings, the product price will not get updated.  In such case, the price needs to manually change for individual products.
+**NOTE:** Product price formatting based on Woocommerce **`Currency options`** setting. If price coming from Duell is in 2 decimals and Woocommerce currency option **`Number of decimals`** set to 0 then price always round up.
+
+Once product sync and then if there is `change in Woocommerce settings`, the product price will not get updated.  In such case, the price needs to `manually change for individual products`.
 
 ### Stocks Sync Workflow
 
