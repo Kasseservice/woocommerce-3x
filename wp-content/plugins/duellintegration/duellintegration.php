@@ -318,80 +318,80 @@ class Duellintegration {
 
     public function setup_action_javascript() {
         ?><script>
-            (function ($) {
-                function blockUI()
-                {
-                    jQuery("#blocker").css('display', "");
-                }
-                function unblockUI()
-                {
-                    jQuery("#blocker").css('display', "none");
-                }
-                var inProcess = false;
-                var $output = $('#manual-cron-output');
-                $('.manual-cron').click(function () {
-                    if (inProcess == false) {
-                        inProcess = true;
-                        console.log($(this).attr('data-type'))
-                        jQuery.ajax({
-                            type: "POST",
-                            url: ajaxurl,
-                            data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
-                            cache: false,
-                            beforeSend: function () {
-                                // jQuery('#button-syncmanually').button('loading');
-                                blockUI();
-                            },
-                            complete: function () {
-                                //jQuery('#button-syncmanually').button('reset');
-                                unblockUI();
-                                inProcess = false;
-                            },
-                            success: function (data) {
-                                $output.html(data.response);
-                            },
-                            error: function (jqXHR, textStatus, errorThrown) {
-                                $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
+                    (function ($) {
+                        function blockUI()
+                        {
+                            jQuery("#blocker").css('display', "");
+                        }
+                        function unblockUI()
+                        {
+                            jQuery("#blocker").css('display', "none");
+                        }
+                        var inProcess = false;
+                        var $output = $('#manual-cron-output');
+                        $('.manual-cron').click(function () {
+                            if (inProcess == false) {
+                                inProcess = true;
+                                console.log($(this).attr('data-type'))
+                                jQuery.ajax({
+                                    type: "POST",
+                                    url: ajaxurl,
+                                    data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
+                                    cache: false,
+                                    beforeSend: function () {
+                                        // jQuery('#button-syncmanually').button('loading');
+                                        blockUI();
+                                    },
+                                    complete: function () {
+                                        //jQuery('#button-syncmanually').button('reset');
+                                        unblockUI();
+                                        inProcess = false;
+                                    },
+                                    success: function (data) {
+                                        $output.html(data.response);
+                                    },
+                                    error: function (jqXHR, textStatus, errorThrown) {
+                                        $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
+                                    }
+                                }).done(function (msg) {
+                                    // alert("Data Saved: " + msg.response);
+                                    $output.html('<code>OK</code>' + msg.response);
+                                });
                             }
-                        }).done(function (msg) {
-                            // alert("Data Saved: " + msg.response);
-                            $output.html('<code>OK</code>' + msg.response);
                         });
-                    }
-                });
 
-                $('#duellintegration_use_customer_order').on('change', function () {
+                        $('#duellintegration_use_customer_order').on('change', function () {
 
-                    var isCustomerOrder = $(this).val();
+                            var isCustomerOrder = $(this).val();
 
-                    if (isCustomerOrder == 1 || isCustomerOrder == '1') {
-                        $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
-                        $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
-                        $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
-                        $(".customerorderupdate").show();
-                    } else {
-                        $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
-                        $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
-                        $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
-                        $(".customerorderupdate").hide();
-                    }
-                });
+                            if (isCustomerOrder == 1 || isCustomerOrder == '1') {
+                                $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
+                                $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
+                                $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
+                                $(".customerorderupdate").show();
+                            } else {
+                                $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
+                                $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
+                                $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
+                                $(".customerorderupdate").hide();
+                            }
+                        });
 
-                var isCustomerOrder = $('#duellintegration_use_customer_order').val();
+                        var isCustomerOrder = $('#duellintegration_use_customer_order').val();
 
-                if (isCustomerOrder == 1 || isCustomerOrder == '1') {
-                    $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
-                    $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
-                    $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
-                    $(".customerorderupdate").show();
-                } else {
-                    $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
-                    $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
-                    $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
-                    $(".customerorderupdate").hide();
-                }
+                        if (isCustomerOrder == 1 || isCustomerOrder == '1') {
+                            $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
+                            $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
+                            $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
+                            $(".customerorderupdate").show();
+                        } else {
+                            $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
+                            $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
+                            $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
+                            $(".customerorderupdate").hide();
+                        }
 
-            }(jQuery));
+                    }(jQuery));
         </script>
         <?php
     }
@@ -441,7 +441,7 @@ class Duellintegration {
         $woocommerce_order_status = array_merge(array('dont-sync' => __("Don't Sync", 'duellintegration')), $get_woocommerce_order_status);
 
 
-        $duell_order_status = array(0 => __("Don't Sync", 'duellintegration'), 1 => 'Behandles', 2 => 'Venter', 3 => 'Sendt', 4 => 'Mottatt', 5 => 'Fullført', 6 => 'Fakturert', 7 => 'Betalt', 8 => 'Kansellert', 9 => 'Under bestilling', 10 => 'Klar for plukking', 11 => 'Ferdig plukket');
+        $duell_order_status = array(0 => __("Don't Sync", 'duellintegration'), 1 => 'Behandles', 2 => 'Venter', 3 => 'Sendt', 4 => 'Mottatt', 5 => 'FullfÃ¸rt', 6 => 'Fakturert', 7 => 'Betalt', 8 => 'Kansellert', 9 => 'Under bestilling', 10 => 'Klar for plukking', 11 => 'Ferdig plukket');
 
 
         $fields = array(
@@ -2067,13 +2067,14 @@ class Duellintegration {
                     $vatrateMultiplier = 1 + ( $vatratePercentage / 100);
                     $priceExTax = $priceIncTax / $vatrateMultiplier;
                     $finalPrice = number_format($priceExTax, 2, '.', '');
+                    $specialPrice = number_format(($specialPrice / $vatrateMultiplier), 2, '.', '');
                 }
                 $productExists = getWooCommerceProductBySku($productNumber);
                 if (!is_null($productExists)) {
                     $post_id = $productExists;
-                    update_post_meta($post_id, '_regular_price', $finalPrice);
-                    update_post_meta($post_id, '_sale_price', $specialPrice);
-                    update_post_meta($post_id, '_price', $finalPrice);
+                    update_post_meta($post_id, '_regular_price', wc_price($finalPrice));
+                    update_post_meta($post_id, '_sale_price', wc_price($specialPrice));
+                    update_post_meta($post_id, '_price', wc_price($finalPrice));
                 }
             }
         }
@@ -2424,10 +2425,11 @@ class Duellintegration {
                         $vatrateMultiplier = 1 + ( $vatratePercentage / 100);
                         $priceExTax = $priceIncTax / $vatrateMultiplier;
                         $finalPrice = number_format($priceExTax, 2, '.', '');
+                        $specialPrice = number_format(($specialPrice / $vatrateMultiplier), 2, '.', '');
                     }
 
                     if ($allowProceed == 1) {
-
+                        $post_id = null;
                         $productExists = getWooCommerceProductBySku($productNumber);
                         if ((is_null($productExists) || $productExists == '' || $productExists <= 0) && ($duellCreateNewProduct == '1' || $duellCreateNewProduct == 1)) {
                             if ($description == '' || is_null($description)) {
@@ -2666,15 +2668,13 @@ class Duellintegration {
                                 update_post_meta($post_id, '_product_image_gallery', "");
                                 update_post_meta($post_id, '_duell_product_id', $duellProductId);
 
-                                update_post_meta($post_id, '_regular_price', $finalPrice);
-                                // update_post_meta($post_id, '_sale_price', $specialPrice);
-                                update_post_meta($post_id, '_price', $finalPrice);
+                                update_post_meta($post_id, '_regular_price', wc_price($finalPrice));
+                                update_post_meta($post_id, '_sale_price', wc_price($specialPrice));
+                                update_post_meta($post_id, '_price', wc_price($finalPrice));
                             }
                             if (is_null($productExists) || ($updateExistingProduct == '1' || $updateExistingProduct == 1)) {
 
-                                update_post_meta($post_id, '_sale_price', $specialPrice);
-
-
+                                //update_post_meta($post_id, '_sale_price', $specialPrice);
                                 //==save image code
                                 if ($productImage != '') {
                                     write_log('Procced data: Have image product ' . $productNumber, true);
