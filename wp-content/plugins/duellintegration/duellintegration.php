@@ -994,7 +994,11 @@ class Duellintegration {
                                         if ((int) $apiOrderPaidStatus == (int) $duellOrderFetchStatus) {
 
                                             //==update order to processing or send to duell status
-                                            $wpdb->update($wpdb->posts, array('post_status' => $duellOrderUpdateToStatus), array('ID' => $orderId));
+                                            //$wpdb->update($wpdb->posts, array('post_status' => $duellOrderUpdateToStatus), array('ID' => $orderId));
+                                            $_order = wc_get_order($orderId);
+                                            if (!is_null($_order) && !empty($_order)) {
+                                                $_order->update_status($duellOrderUpdateToStatus);
+                                            }
                                         }
                                     } else {
                                         $text_error = $wsdata['message'];
@@ -1690,7 +1694,11 @@ class Duellintegration {
                                                     update_post_meta($orderRow['reference_order_number'], '_duell_order_number', $orderRow['order_number']);
 
                                                     //==update order to processing or send to duell status
-                                                    $wpdb->update($wpdb->posts, array('post_status' => $duellOrderUpdateToSyncStatus), array('ID' => $orderRow['reference_order_number']));
+                                                    //$wpdb->update($wpdb->posts, array('post_status' => $duellOrderUpdateToSyncStatus), array('ID' => $orderRow['reference_order_number']));
+                                                    $_order = wc_get_order($orderRow['reference_order_number']);
+                                                    if (!is_null($_order) && !empty($_order)) {
+                                                        $_order->update_status($duellOrderUpdateToSyncStatus);
+                                                    }
                                                 }
                                             }
                                         } else {
