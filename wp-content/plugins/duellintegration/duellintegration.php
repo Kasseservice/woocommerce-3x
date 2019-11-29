@@ -126,6 +126,7 @@ class Duellintegration {
         wp_clear_scheduled_hook('duell_cron_sync_orders');
         wp_clear_scheduled_hook('duell_cron_sync_update_customerorder_status');
 // Remove site wise option
+        delete_option('duellintegration_api_access_token');
         /* delete_option('duellintegration_client_number');
           delete_option('duellintegration_client_token');
 
@@ -760,6 +761,10 @@ class Duellintegration {
     }
 
     function plugin_validate_duellintegration_client_number_option($input) {
+
+        delete_option('duellintegration_api_access_token');
+        setcookie(DUELL_KEY_NAME, '', time() + (86400 * 30), "/"); // 86400 = 1 day
+
         if (is_null($input) || $input == '' || !is_numeric($input) || strlen($input) != 6) {
             $input = get_option('duellintegration_client_number');
             add_settings_error('duellintegration_messages', 'duellintegration_messages', 'Incorrect value entered in client number!', 'error');

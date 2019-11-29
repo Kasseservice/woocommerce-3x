@@ -330,12 +330,12 @@ if (!function_exists('duellLoginApi')) {
             curl_close($curl);
             if ($content_type == 'json') {
 
-                if (function_exists('mb_detect_encoding')) {
-                    $encoding = mb_detect_encoding($result);
-                    if ($encoding == 'UTF-8') {
-                        $result = preg_replace('/[^(\x20-\x7F)]*/', '', $result);
-                    }
-                }
+//                if (function_exists('mb_detect_encoding')) {
+//                    $encoding = mb_detect_encoding($result);
+//                    if ($encoding == 'UTF-8') {
+//                        $result = preg_replace('/[^(\x20-\x7F)]*/', '', $result);
+//                    }
+//                }
                 $res = json_decode($result, true);
                 if (empty($res)) {
                     $res['code'] = 100010;
@@ -344,7 +344,7 @@ if (!function_exists('duellLoginApi')) {
                     $res['message'] = 'Webservice is temporary unavailable. Please try again.';
                     write_log('loginApi() - Result json_decode is not proper');
                 } else {
-                    if ($res['status'] === true) {
+                    if (isset($res['status']) && $res['status'] === true) {
                         
                     } else {
                         $result_code = '';
