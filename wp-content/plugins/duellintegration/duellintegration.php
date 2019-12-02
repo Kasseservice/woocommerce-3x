@@ -319,80 +319,80 @@ class Duellintegration {
 
     public function setup_action_javascript() {
         ?><script>
-                    (function ($) {
-                        function blockUI()
-                        {
-                            jQuery("#blocker").css('display', "");
-                        }
-                        function unblockUI()
-                        {
-                            jQuery("#blocker").css('display', "none");
-                        }
-                        var inProcess = false;
-                        var $output = $('#manual-cron-output');
-                        $('.manual-cron').click(function () {
-                            if (inProcess == false) {
-                                inProcess = true;
-                                console.log($(this).attr('data-type'))
-                                jQuery.ajax({
-                                    type: "POST",
-                                    url: ajaxurl,
-                                    data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
-                                    cache: false,
-                                    beforeSend: function () {
-                                        // jQuery('#button-syncmanually').button('loading');
-                                        blockUI();
-                                    },
-                                    complete: function () {
-                                        //jQuery('#button-syncmanually').button('reset');
-                                        unblockUI();
-                                        inProcess = false;
-                                    },
-                                    success: function (data) {
-                                        $output.html(data.response);
-                                    },
-                                    error: function (jqXHR, textStatus, errorThrown) {
-                                        $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
-                                    }
-                                }).done(function (msg) {
-                                    // alert("Data Saved: " + msg.response);
-                                    $output.html('<code>OK</code>' + msg.response);
-                                });
+            (function ($) {
+                function blockUI()
+                {
+                    jQuery("#blocker").css('display', "");
+                }
+                function unblockUI()
+                {
+                    jQuery("#blocker").css('display', "none");
+                }
+                var inProcess = false;
+                var $output = $('#manual-cron-output');
+                $('.manual-cron').click(function () {
+                    if (inProcess == false) {
+                        inProcess = true;
+                        console.log($(this).attr('data-type'))
+                        jQuery.ajax({
+                            type: "POST",
+                            url: ajaxurl,
+                            data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
+                            cache: false,
+                            beforeSend: function () {
+                                // jQuery('#button-syncmanually').button('loading');
+                                blockUI();
+                            },
+                            complete: function () {
+                                //jQuery('#button-syncmanually').button('reset');
+                                unblockUI();
+                                inProcess = false;
+                            },
+                            success: function (data) {
+                                $output.html(data.response);
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
                             }
+                        }).done(function (msg) {
+                            // alert("Data Saved: " + msg.response);
+                            $output.html('<code>OK</code>' + msg.response);
                         });
+                    }
+                });
 
-                        $('#duellintegration_use_customer_order').on('change', function () {
+                $('#duellintegration_use_customer_order').on('change', function () {
 
-                            var isCustomerOrder = $(this).val();
+                    var isCustomerOrder = $(this).val();
 
-                            if (isCustomerOrder == 1 || isCustomerOrder == '1') {
-                                $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
-                                $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
-                                $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
-                                $(".customerorderupdate").show();
-                            } else {
-                                $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
-                                $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
-                                $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
-                                $(".customerorderupdate").hide();
-                            }
-                        });
+                    if (isCustomerOrder == 1 || isCustomerOrder == '1') {
+                        $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
+                        $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
+                        $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
+                        $(".customerorderupdate").show();
+                    } else {
+                        $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
+                        $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
+                        $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
+                        $(".customerorderupdate").hide();
+                    }
+                });
 
-                        var isCustomerOrder = $('#duellintegration_use_customer_order').val();
+                var isCustomerOrder = $('#duellintegration_use_customer_order').val();
 
-                        if (isCustomerOrder == 1 || isCustomerOrder == '1') {
-                            $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
-                            $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
-                            $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
-                            $(".customerorderupdate").show();
-                        } else {
-                            $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
-                            $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
-                            $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
-                            $(".customerorderupdate").hide();
-                        }
+                if (isCustomerOrder == 1 || isCustomerOrder == '1') {
+                    $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
+                    $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
+                    $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
+                    $(".customerorderupdate").show();
+                } else {
+                    $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
+                    $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
+                    $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
+                    $(".customerorderupdate").hide();
+                }
 
-                    }(jQuery));
+            }(jQuery));
         </script>
         <?php
     }
@@ -1384,7 +1384,12 @@ class Duellintegration {
                                             }
                                         }
                                     }
-                                    if ($duellCustomerId == 0) {
+
+                                    if (strlen($customerRowData['phone']) >= 8) {
+                                        
+                                    } elseif ($customerRowData['email'] != '' && filter_var($customerRowData['email'], FILTER_VALIDATE_EMAIL)) {
+                                        
+                                    } elseif ($duellCustomerId == 0) {
                                         $customerApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
                                         $customerApiData['filter[customer_phone]'] = 99999999;
                                         $wsdata = callDuell('customer/list', 'get', $customerApiData, 'json', $type);

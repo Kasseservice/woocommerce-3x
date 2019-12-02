@@ -40,7 +40,7 @@ if (!function_exists('getWooCommerceOrderProductsById')) {
         if (is_wp_error($id))
             return $id;
         // Get the decimal precession
-        $dp = (isset($filter['dp'])) ? intval($filter['dp']) : 2;
+        $dp = (isset($filter['dp'])) ? intval($filter['dp']) : wc_get_price_decimals();
         $_tax = new WC_Tax();
         $order = wc_get_order($id); //getting order Object
         $order_data = array(
@@ -93,7 +93,7 @@ if (!function_exists('getWooCommerceOrderDetailById')) {
         if (is_wp_error($id))
             return $id;
         // Get the decimal precession
-        $dp = (isset($filter['dp'])) ? intval($filter['dp']) : 2;
+        $dp = (isset($filter['dp'])) ? intval($filter['dp']) : wc_get_price_decimals();
         $_tax = new WC_Tax();
         $order = wc_get_order($id); //getting order Object
         $duell_customer_id = get_post_meta($order->get_id(), '_duell_customer_id', true);
