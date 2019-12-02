@@ -1159,7 +1159,7 @@ class Duellintegration {
                                 $orderData['department_id'] = $duellOrderDepartmentToken;
                             }
                             $orderData['comments'] = $orderDetailData['note'];
-                            $orderData['reference_comment'] = '';
+                            $orderData['reference_comment'] = $orderData['reference_comment'] = 'Ordre ' . $orderId . ' ' . site_url();
                             $orderData['reference_order_number'] = $orderId; //$orderDetailData['order_number'];
                             $orderData['round_off_amount'] = 0;
 
