@@ -1234,13 +1234,13 @@ class Duellintegration {
 //==original cost
                                 $subtotalWithQty = $orderLine['subtotal'];
                                 $subtotalTaxWithQty = $orderLine['subtotal_tax'];
-                                $singleQtyPrice = $subtotalWithQty / $quantity;
-                                $singleQtyTax = $subtotalTaxWithQty / $quantity;
+                                $singleQtyPrice = wc_format_decimal(($subtotalWithQty / $quantity), wc_get_price_decimals());
+                                $singleQtyTax = wc_format_decimal(($subtotalTaxWithQty / $quantity), wc_get_price_decimals());
 //==total cost after discount
                                 $totalWithQty = $orderLine['total'];
                                 $totalTaxWithQty = $orderLine['total_tax'];
-                                $singleTotalQtyPrice = $totalWithQty / $quantity;
-                                $singleTotalQtyTax = $totalTaxWithQty / $quantity;
+                                $singleTotalQtyPrice = wc_format_decimal(($totalWithQty / $quantity), wc_get_price_decimals());
+                                $singleTotalQtyTax = wc_format_decimal(($totalTaxWithQty / $quantity), wc_get_price_decimals());
 //==calculate discount
                                 $singleProductDiscountAmount = $singleQtyPrice - $singleQtyPriceAfterDiscount;
                                 if ($singleProductDiscountAmount > 0) {
