@@ -1243,8 +1243,10 @@ class Duellintegration {
                                 $singleTotalQtyTax = wc_format_decimal(($totalTaxWithQty / $quantity), wc_get_price_decimals());
 //==calculate discount
                                 $singleProductDiscountAmount = $singleQtyPrice - $singleQtyPriceAfterDiscount;
+                                $singleProductDiscountAmountIncVat = '';
                                 if ($singleProductDiscountAmount > 0) {
-                                    $discount_percentage = round((($singleProductDiscountAmount * 100) / $singleQtyPrice), 2);
+                                    $singleProductDiscountAmountIncVat = ( (($subtotalWithQty + $subtotalTaxWithQty) - ($totalTaxWithQty + $totalWithQty)) / $quantity);
+                                    $discount_percentage = wc_format_decimal((($singleProductDiscountAmount * 100) / $singleQtyPrice), wc_get_price_decimals());
                                 }
 //==calculate vatrate percentage
 
@@ -1266,7 +1268,8 @@ class Duellintegration {
                                 $orderProduct['price_inc_vat'] = $price_inc_vat;
                                 $orderProduct['quantity'] = $quantity;
                                 $orderProduct['vatrate_percent'] = $vatrate_percent;
-                                $orderProduct['discount_percentage'] = $discount_percentage;
+                                //$orderProduct['discount_percentage'] = $discount_percentage;
+                                $orderProduct['discount_amount'] = $singleProductDiscountAmountIncVat;
                                 $orderProduct['comments'] = $orderProductComment;
                                 if ($orderLine['duell_category_id'] <= 0 || $orderLine['duell_category_id'] == '' || is_null($orderLine['duell_category_id'])) {
                                     $category_name = $orderLine['category_name'];
