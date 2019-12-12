@@ -94,7 +94,7 @@ On Wordpress Admin
 
 ### Step 5: Setup cron job manually 
 
-If Wordpress auto cron not work, than user have to setup cron job command manually to the server. [Here](https://developer.wordpress.org/plugins/cron/hooking-into-the-system-task-scheduler/)
+If Wordpress auto cron not work, than user have to setup cron job command manually to the server. [Here](https://developer.wordpress.org/plugins/cron/hooking-wp-cron-into-the-system-task-scheduler/)
 
 Cron job can be set either with cURL or wget.
 
