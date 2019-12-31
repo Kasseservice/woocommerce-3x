@@ -319,80 +319,80 @@ class Duellintegration {
 
     public function setup_action_javascript() {
         ?><script>
-                    (function ($) {
-                        function blockUI()
-                        {
-                            jQuery("#blocker").css('display', "");
-                        }
-                        function unblockUI()
-                        {
-                            jQuery("#blocker").css('display', "none");
-                        }
-                        var inProcess = false;
-                        var $output = $('#manual-cron-output');
-                        $('.manual-cron').click(function () {
-                            if (inProcess == false) {
-                                inProcess = true;
-                                console.log($(this).attr('data-type'))
-                                jQuery.ajax({
-                                    type: "POST",
-                                    url: ajaxurl,
-                                    data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
-                                    cache: false,
-                                    beforeSend: function () {
-                                        // jQuery('#button-syncmanually').button('loading');
-                                        blockUI();
-                                    },
-                                    complete: function () {
-                                        //jQuery('#button-syncmanually').button('reset');
-                                        unblockUI();
-                                        inProcess = false;
-                                    },
-                                    success: function (data) {
-                                        $output.html(data.response);
-                                    },
-                                    error: function (jqXHR, textStatus, errorThrown) {
-                                        $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
-                                    }
-                                }).done(function (msg) {
-                                    // alert("Data Saved: " + msg.response);
-                                    $output.html('<code>OK</code>' + msg.response);
-                                });
+            (function ($) {
+                function blockUI()
+                {
+                    jQuery("#blocker").css('display', "");
+                }
+                function unblockUI()
+                {
+                    jQuery("#blocker").css('display', "none");
+                }
+                var inProcess = false;
+                var $output = $('#manual-cron-output');
+                $('.manual-cron').click(function () {
+                    if (inProcess == false) {
+                        inProcess = true;
+                        console.log($(this).attr('data-type'))
+                        jQuery.ajax({
+                            type: "POST",
+                            url: ajaxurl,
+                            data: {action: 'manual_run_cron_action', param: $(this).attr('data-type')},
+                            cache: false,
+                            beforeSend: function () {
+                                // jQuery('#button-syncmanually').button('loading');
+                                blockUI();
+                            },
+                            complete: function () {
+                                //jQuery('#button-syncmanually').button('reset');
+                                unblockUI();
+                                inProcess = false;
+                            },
+                            success: function (data) {
+                                $output.html(data.response);
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) {
+                                $output.html('<code>ERROR</code> ' + textStatus + ' ' + errorThrown);
                             }
+                        }).done(function (msg) {
+                            // alert("Data Saved: " + msg.response);
+                            $output.html('<code>OK</code>' + msg.response);
                         });
+                    }
+                });
 
-                        $('#duellintegration_use_customer_order').on('change', function () {
+                $('#duellintegration_use_customer_order').on('change', function () {
 
-                            var isCustomerOrder = $(this).val();
+                    var isCustomerOrder = $(this).val();
 
-                            if (isCustomerOrder == 1 || isCustomerOrder == '1') {
-                                $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
-                                $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
-                                $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
-                                $(".customerorderupdate").show();
-                            } else {
-                                $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
-                                $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
-                                $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
-                                $(".customerorderupdate").hide();
-                            }
-                        });
+                    if (isCustomerOrder == 1 || isCustomerOrder == '1') {
+                        $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
+                        $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
+                        $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
+                        $(".customerorderupdate").show();
+                    } else {
+                        $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
+                        $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
+                        $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
+                        $(".customerorderupdate").hide();
+                    }
+                });
 
-                        var isCustomerOrder = $('#duellintegration_use_customer_order').val();
+                var isCustomerOrder = $('#duellintegration_use_customer_order').val();
 
-                        if (isCustomerOrder == 1 || isCustomerOrder == '1') {
-                            $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
-                            $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
-                            $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
-                            $(".customerorderupdate").show();
-                        } else {
-                            $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
-                            $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
-                            $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
-                            $(".customerorderupdate").hide();
-                        }
+                if (isCustomerOrder == 1 || isCustomerOrder == '1') {
+                    $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').removeAttr("style");
+                    $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').removeAttr("style");
+                    $("#duellintegration_customer_order_update_status").parent('td').parent('tr').removeAttr("style");
+                    $(".customerorderupdate").show();
+                } else {
+                    $("#duellintegration_order_sync_update_to_status").parent('td').parent('tr').hide();
+                    $("#duellintegration_customer_order_fetch_status").parent('td').parent('tr').hide();
+                    $("#duellintegration_customer_order_update_status").parent('td').parent('tr').hide();
+                    $(".customerorderupdate").hide();
+                }
 
-                    }(jQuery));
+            }(jQuery));
         </script>
         <?php
     }
@@ -2010,8 +2010,8 @@ class Duellintegration {
                 $limit = $this->duellLimit;
                 $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
                 $apiData['filter[view_on_webshop]'] = true;
-                $apiData['filter[sort_by]'] = 'product_id';
-                $apiData['filter[sort_order]'] = 'ASC';
+                $apiData['sort_by'] = 'product_id';
+                $apiData['sort_order'] = 'ASC';
                 if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
                     $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
                 }
@@ -2027,8 +2027,8 @@ class Duellintegration {
                             while ($totalRecord > $limit && $totalRecord > $nextCounter) {
                                 $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
                                 $apiData['filter[view_on_webshop]'] = true;
-                                $apiData['filter[sort_by]'] = 'product_id';
-                                $apiData['filter[sort_order]'] = 'ASC';
+                                $apiData['sort_by'] = 'product_id';
+                                $apiData['sort_order'] = 'ASC';
                                 if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
                                     $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
                                 }
@@ -2079,10 +2079,10 @@ class Duellintegration {
                 $productNumber = $product['product_number'];
                 $vatratePercentage = $product['vatrate_percent'];
                 $costPrice = $product['cost_price'];
-                $specialPrice = $product['special_price'];
-                $priceIncTax = $product['price_inc_vat'];
+                $specialPrice = (!is_null($product['special_price']) && $product['special_price'] != '' && $product['special_price'] >= 0) ? $product['special_price'] : '';
+                $priceIncTax = (!is_null($product['price_inc_vat']) && $product['price_inc_vat'] != '' && $product['price_inc_vat'] >= 0) ? $product['price_inc_vat'] : '';
                 $barcode = $product['barcode'];
-                $finalPrice = 0;
+                $finalPrice = '';
                 if ($woocommerce_prices_include_tax == 'yes') {
                     $finalPrice = $priceIncTax;
                 } else {
@@ -2139,8 +2139,8 @@ class Duellintegration {
                 $this->productSyncError = 0;
                 $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
                 $apiData['filter[view_on_webshop]'] = true;
-                $apiData['filter[sort_by]'] = 'product_id';
-                $apiData['filter[sort_order]'] = 'ASC';
+                $apiData['sort_by'] = 'product_id';
+                $apiData['sort_order'] = 'ASC';
                 if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
                     $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
                 }
@@ -2156,8 +2156,8 @@ class Duellintegration {
                             while ($totalRecord > $limit && $totalRecord > $nextCounter) {
                                 $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
                                 $apiData['filter[view_on_webshop]'] = true;
-                                $apiData['filter[sort_by]'] = 'product_id';
-                                $apiData['filter[sort_order]'] = 'ASC';
+                                 $apiData['sort_by'] = 'product_id';
+                                $apiData['sort_order'] = 'ASC';
                                 if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
                                     $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
                                 }
@@ -2198,8 +2198,8 @@ class Duellintegration {
                 $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
                 $apiData['filter[view_on_webshop]'] = true;
                 $apiData['filter[is_deleted]'] = true;
-                $apiData['filter[sort_by]'] = 'product_id';
-                $apiData['filter[sort_order]'] = 'ASC';
+                $apiData['sort_by'] = 'product_id';
+                $apiData['sort_order'] = 'ASC';
                 if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
                     $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
                 }
@@ -2216,8 +2216,8 @@ class Duellintegration {
                                 $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
                                 $apiData['filter[view_on_webshop]'] = true;
                                 $apiData['filter[is_deleted]'] = true;
-                                $apiData['filter[sort_by]'] = 'product_id';
-                                $apiData['filter[sort_order]'] = 'ASC';
+                                $apiData['sort_by'] = 'product_id';
+                                $apiData['sort_order'] = 'ASC';
                                 if (!is_null($lastSyncDate) && validateDateTime($lastSyncDate, 'Y-m-d H:i:s')) {
                                     $apiData['filter[last_update_date]'] = date('Y-m-d H:i:s', strtotime($lastSyncDate));
                                 }
@@ -2360,7 +2360,7 @@ class Duellintegration {
 
         if (!empty($data)) {
 
-            $data = array_reverse($data);
+            //$data = array_reverse($data);
 
             wp_defer_term_counting(true);
             wp_defer_comment_counting(true);
@@ -2376,8 +2376,9 @@ class Duellintegration {
                     $categoryName = $product['category_name'];
                     $vatratePercentage = $product['vatrate_percent'];
                     $costPrice = $product['cost_price'];
-                    $specialPrice = $product['special_price'];
-                    $priceIncTax = $product['price_inc_vat'];
+                    $specialPrice = (!is_null($product['special_price']) && $product['special_price'] != '' && $product['special_price'] >= 0) ? $product['special_price'] : '';
+                    $priceIncTax = (!is_null($product['price_inc_vat']) && $product['price_inc_vat'] != '' && $product['price_inc_vat'] >= 0) ? $product['price_inc_vat'] : '';
+
                     $isDeleted = $product['is_deleted'];
                     $productImage = $product['product_image'];
 
@@ -2407,7 +2408,7 @@ class Duellintegration {
                                 array(
                                     'post_type' => 'product',
                                     'posts_per_page' => 1,
-                                    'post_status' => array('pending', 'publish'),
+                                    'post_status' => array('pending', 'publish','draft'),
                                     'post_parent' => 0,
                                     'meta_query' => array(
                                         array(
@@ -2440,7 +2441,7 @@ class Duellintegration {
                     $productName = $origProductName = trim(str_replace($mainProductName, '', $productName));
 
 
-                    $finalPrice = 0;
+                    $finalPrice = '';
                     if ($woocommerce_prices_include_tax == 'yes') {
                         $finalPrice = $priceIncTax;
                     } else {
@@ -2801,9 +2802,11 @@ class Duellintegration {
 
                                 // change array or serialize
                                 $product_attributes_data = get_post_meta($mainProductId, '_product_attributes', true);
-
+                                $totalAttributes=0;                               
+                                 
                                 $isAttributeExists = false;
                                 if (!empty($product_attributes_data) && !is_null($product_attributes_data)) {
+                                    $totalAttributes=count($product_attributes_data);                                   
                                     foreach ($product_attributes_data as $attrKey => $attr) {
                                         if ($attrKey == $parentAttributeKeyName) {
                                             $isAttributeExists = true;
@@ -2815,10 +2818,16 @@ class Duellintegration {
                                 if (!$isAttributeExists) {
                                     // Set this attributes array to a key to using the prefix 'pa'
                                     $newAttribute = array();
+                                    
+                                    $isUsedForVariant='1';
+                                    if($totalAttributes>0){
+                                           $isUsedForVariant='0';
+                                    }                                   
+                                   
                                     $newAttribute[$parentAttributeKeyName] = array('name' => $parentAttributeKeyName,
                                         'value' => '',
                                         'is_visible' => '1',
-                                        'is_variation' => '1',
+                                        'is_variation' => $isUsedForVariant,
                                         'is_taxonomy' => '1'
                                     );
 
