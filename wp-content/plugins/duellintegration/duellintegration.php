@@ -988,7 +988,7 @@ class Duellintegration {
 
 
 
-                                $orderApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken);
+                                $orderApiData = array();
                                 $wsdata = callDuell('logistics/orders/view/' . $duellCustomerOrderId, 'get', $orderApiData, 'json', $type);
 
                                 if (isset($wsdata['status']) && $wsdata['status'] === true) {
@@ -1354,7 +1354,7 @@ class Duellintegration {
 
 
                                     if (strlen($customerRowData['phone']) >= 8) {
-                                        $customerApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
+                                        $customerApiData = array( 'length' => 1, 'start' => 0);
                                         $customerApiData['filter[customer_phone]'] = $customerRowData['phone'];
                                         $wsdata = callDuell('customer/list', 'get', $customerApiData, 'json', $type);
                                         if (isset($wsdata['status']) && $wsdata['status'] === true) {
@@ -1372,7 +1372,7 @@ class Duellintegration {
 
                                     if ($duellCustomerId == 0 && $customerRowData['email'] != '' && filter_var($customerRowData['email'], FILTER_VALIDATE_EMAIL)) {
 
-                                        $customerApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
+                                        $customerApiData = array( 'length' => 1, 'start' => 0);
                                         $customerApiData['filter[customer_email]'] = $customerRowData['email'];
 
                                         $wsdata = callDuell('customer/list', 'get', $customerApiData, 'json', $type);
@@ -1394,7 +1394,7 @@ class Duellintegration {
                                     } elseif ($customerRowData['email'] != '' && filter_var($customerRowData['email'], FILTER_VALIDATE_EMAIL)) {
                                         
                                     } elseif ($duellCustomerId == 0) {
-                                        $customerApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
+                                        $customerApiData = array( 'length' => 1, 'start' => 0);
                                         $customerApiData['filter[customer_phone]'] = 99999999;
                                         $wsdata = callDuell('customer/list', 'get', $customerApiData, 'json', $type);
                                         if (isset($wsdata['status']) && $wsdata['status'] === true) {
@@ -1461,7 +1461,7 @@ class Duellintegration {
                                 $isProductCategorySync = false;
                                 foreach ($notSyncCategoryData as $catId => $categoryRowData) {
                                     $duellCategoryId = 0;
-                                    $categoryApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
+                                    $categoryApiData = array( 'length' => 1, 'start' => 0);
                                     $categoryApiData['filter[category_name]'] = $categoryRowData['category_name'];
                                     $wsdata = callDuell('product/category/list/product', 'get', $categoryApiData, 'json', $type);
                                     if (isset($wsdata['status']) && $wsdata['status'] === true) {
@@ -1480,7 +1480,7 @@ class Duellintegration {
                                         $categoryNewData[] = array('category_name' => $categoryRowData['category_name'],
                                             'category_type' => 'product'
                                         );
-                                        $categorySaveData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'category_data' => $categoryNewData);
+                                        $categorySaveData = array( 'category_data' => $categoryNewData);
                                         $wsdata = callDuell('product/category/save', 'post', $categorySaveData, 'json', $type);
                                         if (isset($wsdata['status']) && $wsdata['status'] === true) {
                                             if (isset($wsdata['data']) && !empty($wsdata['data'])) {
@@ -1535,7 +1535,7 @@ class Duellintegration {
                                 $isProductSync = false;
                                 foreach ($notSyncProductData as $productId => $productRowData) {
                                     $duellProductId = 0;
-                                    $productApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => 1, 'start' => 0);
+                                    $productApiData = array( 'length' => 1, 'start' => 0);
                                     $productApiData['filter[product_number]'] = $productRowData['product_number'];
                                     $wsdata = callDuell('product/list', 'get', $productApiData, 'json', $type);
                                     if (isset($wsdata['status']) && $wsdata['status'] === true) {
@@ -1552,7 +1552,7 @@ class Duellintegration {
                                     if ($duellProductId == 0 && ($duellCreateNewProduct == 1 || $duellCreateNewProduct == '1')) {
                                         $productNewData = array();
                                         $productNewData[] = $productRowData;
-                                        $productSaveData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'product_data' => $productNewData);
+                                        $productSaveData = array( 'product_data' => $productNewData);
                                         $wsdata = callDuell('product/save', 'post', $productSaveData, 'json', $type);
                                         if (isset($wsdata['status']) && $wsdata['status'] === true) {
                                             if (isset($wsdata['data']) && !empty($wsdata['data'])) {
@@ -1628,7 +1628,7 @@ class Duellintegration {
                                 $prepareSalesOrderData = array();
                                 if ($duellUseCustomerOrder == '1' && $duellOrderUpdateToSyncStatus != 'dont-sync') {
                                     $customerOrderSyncIds = array();
-                                    $customerOrderApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'orders' => $prepareOrderData);
+                                    $customerOrderApiData = array( 'orders' => $prepareOrderData);
                                     $customerwsdata = callDuell('logistics/orders/save', 'post', $customerOrderApiData, 'json', $type);
                                     if (isset($customerwsdata['validation_message']) && !empty($customerwsdata['validation_message'])) {
                                         write_log($customerwsdata['validation_message'], true);
@@ -1680,7 +1680,7 @@ class Duellintegration {
                                 }
                                 //==sale order
                                 $doProcessSalesOrder = true;
-                                $orderApiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken);
+                                $orderApiData = array();
 
                                 if ($duellUseCustomerOrder == '1' && $duellOrderUpdateToSyncStatus != 'dont-sync') {
 
@@ -1811,7 +1811,7 @@ class Duellintegration {
                     ini_set('memory_limit', '-1');
                     ini_set('max_execution_time', 0);
                     ini_set('default_socket_timeout', 500000);
-                    $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken);
+                    $apiData = array();
                     $apiData['department_token'] = $duellStockDepartmentToken;
                     $apiData['product_data'] = $duellProductData;
                     $wsdata = callDuell('product/adjust-stock', 'post', $apiData);
@@ -1889,7 +1889,7 @@ class Duellintegration {
                 ini_set('default_socket_timeout', 500000);
                 $start = 0;
                 $limit = $this->duellLimit;
-                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+                $apiData = array( 'length' => $limit, 'start' => $start);
                 $apiData['department'] = $duellStockDepartmentToken;
                 $apiData['filter[view_on_webshop]'] = true;
                 $wsdata = callDuell('all/product/stock', 'get', $apiData, 'json', $type);
@@ -1902,7 +1902,7 @@ class Duellintegration {
                             usleep(500000);
                             $nextCounter = $start + $limit;
                             while ($totalRecord > $limit && $totalRecord > $nextCounter) {
-                                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
+                                $apiData = array( 'length' => $limit, 'start' => $nextCounter);
                                 $apiData['department'] = $duellStockDepartmentToken;
                                 $apiData['filter[view_on_webshop]'] = true;
                                 $wsdata = callDuell('all/product/stock', 'get', $apiData, 'json', $type);
@@ -1958,11 +1958,11 @@ class Duellintegration {
                         $stockStatus = get_post_meta($post_id, '_stock_status', true);
                         $currentStock = get_post_meta($post_id, '_stock', true);
                         write_log('processStockUpdation() Before updating stock - Product Id: ' . $post_id . ' Current Status: ' . $stockStatus . ' Current Qty: ' . $currentStock . ' New Qty: ' . $stock, true);
-                        $stockStatusMsg = 'outofstock';
+                        $stockStatusMsg = 'onbackorder';
                         if ($stock > 0) {
                             $stockStatusMsg = 'instock';
                         }
-                        update_post_meta($post_id, '_stock_status', $stockStatusMsg);
+                        //update_post_meta($post_id, '_stock_status', $stockStatusMsg);
                         update_post_meta($post_id, '_stock', $stock);
                     }
                 }
@@ -2008,7 +2008,7 @@ class Duellintegration {
                 $lastSyncDate = get_option('duellintegration_prices_lastsync');
                 $start = 0;
                 $limit = $this->duellLimit;
-                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+                $apiData = array( 'length' => $limit, 'start' => $start);
                 $apiData['filter[view_on_webshop]'] = true;
                 $apiData['sort_by'] = 'product_id';
                 $apiData['sort_order'] = 'ASC';
@@ -2025,7 +2025,7 @@ class Duellintegration {
                             usleep(500000);
                             $nextCounter = $start + $limit;
                             while ($totalRecord > $limit && $totalRecord > $nextCounter) {
-                                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
+                                $apiData = array( 'length' => $limit, 'start' => $nextCounter);
                                 $apiData['filter[view_on_webshop]'] = true;
                                 $apiData['sort_by'] = 'product_id';
                                 $apiData['sort_order'] = 'ASC';
@@ -2137,7 +2137,7 @@ class Duellintegration {
                 $start = 0;
                 $limit = $this->duellLimit;
                 $this->productSyncError = 0;
-                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+                $apiData = array( 'length' => $limit, 'start' => $start);
                 $apiData['filter[view_on_webshop]'] = true;
                 $apiData['sort_by'] = 'product_id';
                 $apiData['sort_order'] = 'ASC';
@@ -2154,7 +2154,7 @@ class Duellintegration {
                             usleep(500000);
                             $nextCounter = $start + $limit;
                             while ($totalRecord > $limit && $totalRecord > $nextCounter) {
-                                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
+                                $apiData = array( 'length' => $limit, 'start' => $nextCounter);
                                 $apiData['filter[view_on_webshop]'] = true;
                                  $apiData['sort_by'] = 'product_id';
                                 $apiData['sort_order'] = 'ASC';
@@ -2195,7 +2195,7 @@ class Duellintegration {
 
                 $limit = $this->duellLimit;
 
-                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $start);
+                $apiData = array( 'length' => $limit, 'start' => $start);
                 $apiData['filter[view_on_webshop]'] = true;
                 $apiData['filter[is_deleted]'] = true;
                 $apiData['sort_by'] = 'product_id';
@@ -2213,7 +2213,7 @@ class Duellintegration {
                             usleep(500000);
                             $nextCounter = $start + $limit;
                             while ($totalRecord > $limit && $totalRecord > $nextCounter) {
-                                $apiData = array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken, 'length' => $limit, 'start' => $nextCounter);
+                                $apiData = array( 'length' => $limit, 'start' => $nextCounter);
                                 $apiData['filter[view_on_webshop]'] = true;
                                 $apiData['filter[is_deleted]'] = true;
                                 $apiData['sort_by'] = 'product_id';
@@ -2668,9 +2668,9 @@ class Duellintegration {
                                 update_post_meta($post_id, '_tax_status', 'taxable');
                                 update_post_meta($post_id, '_tax_class', $taxClass);
                                 update_post_meta($post_id, '_manage_stock', "yes");
-                                update_post_meta($post_id, '_stock_status', 'outofstock');
+                                update_post_meta($post_id, '_stock_status', 'onbackorder');
                                 update_post_meta($post_id, '_stock', "0");
-                                update_post_meta($post_id, '_backorders', "no");
+                                update_post_meta($post_id, '_backorders', "notify");
                                 update_post_meta($post_id, '_sold_individually', "");
                                 update_post_meta($post_id, '_weight', "");
                                 update_post_meta($post_id, '_length', "");

@@ -282,7 +282,7 @@ if (!function_exists('duellLoginApi')) {
     function duellLoginApi($action, $method = 'POST', $data = array(), $content_type = 'json', $type = 'manual') {
         try {
             $method = strtoupper($method);
-            write_log('loginApi(' . $action . ') - Data: ' . json_encode($data));
+            //write_log('loginApi(' . $action . ') - Data: ' . json_encode($data));
             $url = DUELL_API_ENDPOINT . $action;
             $headers = array();
             $headers[] = 'Content-Type: application/x-www-form-urlencoded';
@@ -394,6 +394,14 @@ if (!function_exists('callDuell')) {
         try {
             $requestedData = $data;
             $method = strtoupper($method);
+            
+            if(isset($data['client_number'])){
+                unset($data['client_number']);
+            }
+            if(isset($data['client_token'])){
+                unset($data['client_token']);
+            }            
+            
             write_log('call(' . $action . ') - Data: ' . json_encode($data));
             $url = DUELL_API_ENDPOINT . $action;
             $token = '';
@@ -403,10 +411,16 @@ if (!function_exists('callDuell')) {
                 $token = $_COOKIE[DUELL_KEY_NAME];
                 update_option('duellintegration_api_access_token', $token);
             } else {
+                
+                 $duellClientNumber = get_option('duellintegration_client_number');
+            $duellClientToken = get_option('duellintegration_client_token');
+            
+            $loginRequestData=array('client_number' => $duellClientNumber, 'client_token' => $duellClientToken);
+                
                 $loginAttempt = 1;
                 while ($loginAttempt <= DUELL_TOTAL_LOGIN_ATTEMPT) {
                     //write_log('call(' . $action . ') - login Attempt: ' . $loginAttempt);
-                    $tokenData = duellLoginApi(DUELL_LOGIN_ACTION, 'POST', $requestedData, $content_type, $type);
+                    $tokenData = duellLoginApi(DUELL_LOGIN_ACTION, 'POST', $loginRequestData, $content_type, $type);
                     if ($tokenData['status'] == true) {
                         //==save in session or cookie
                         $token = $tokenData['token'];
