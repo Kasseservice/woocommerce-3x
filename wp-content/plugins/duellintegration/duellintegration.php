@@ -2089,7 +2089,9 @@ class Duellintegration {
                     $vatrateMultiplier = 1 + ( $vatratePercentage / 100);
                     $priceExTax = $priceIncTax / $vatrateMultiplier;
                     $finalPrice = number_format($priceExTax, 2, '.', '');
-                    $specialPrice = number_format(($specialPrice / $vatrateMultiplier), 2, '.', '');
+                    if($specialPrice!='' && $specialPrice>=0 && $vatrateMultiplier>0){          
+                        $specialPrice = number_format(($specialPrice / $vatrateMultiplier), 2, '.', '');
+                    }
                 }
                 $productExists = getWooCommerceProductBySku($productNumber);
                 if (!is_null($productExists)) {
@@ -2448,7 +2450,9 @@ class Duellintegration {
                         $vatrateMultiplier = 1 + ( $vatratePercentage / 100);
                         $priceExTax = $priceIncTax / $vatrateMultiplier;
                         $finalPrice = number_format($priceExTax, 2, '.', '');
+                         if($specialPrice!='' && $specialPrice>=0 && $vatrateMultiplier>0){          
                         $specialPrice = number_format(($specialPrice / $vatrateMultiplier), 2, '.', '');
+                         }
                     }
 
                     if ($allowProceed == 1) {
