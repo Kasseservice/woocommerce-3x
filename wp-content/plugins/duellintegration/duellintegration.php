@@ -685,6 +685,21 @@ class Duellintegration {
                 'helper' => '',
                 'supplimental' => __('If enable, Duell update exisiting product information to Woocommerce', 'duellintegration'),
                 'validation' => false
+            ),
+            array(
+                'uid' => 'duellintegration_allow_stock_deduction_to_duell',
+                'label' => __('Enable Stock Deduction', 'duellintegration'),
+                'section' => 'duell_order_configuration_section',
+                'type' => 'select',
+                'options' => array(
+                    '1' => 'Yes',
+                    '0' => 'No'
+                ),
+                'default' => 0,
+                'class' => "",
+                'helper' => '',
+                'supplimental' => __('If enable, whenever order placed stock deducted at Duell', 'duellintegration'),
+                'validation' => false
             )
         );
 
@@ -1762,6 +1777,15 @@ class Duellintegration {
         if (!$order_id) {
             return;
         }
+        
+        $duellStockDeductionAllowed = get_option('duellintegration_allow_stock_deduction_to_duell');
+            if ($duellStockDeductionAllowed == 1 || $duellStockDeductionAllowed == '1') {
+                
+            } else {
+                 write_log('Stock deduction is disabled. For order: '.$order_id, true);
+                 return;
+            }
+            
         try {
 
             $isStockSubtracted = get_post_meta($order_id, 'is_stock_subtracted', true);
