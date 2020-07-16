@@ -722,7 +722,7 @@ class Duellintegration {
 
     public function field_callback($arguments) {
         $value = get_option($arguments['uid']);
-        if (is_null($value) || !$value) {
+        if (is_null($value)) {
             $value = $arguments['default'];
         }
         switch ($arguments['type']) {
