@@ -2123,6 +2123,7 @@ class Duellintegration {
                     update_post_meta($post_id, '_regular_price', wc_format_decimal($finalPrice, wc_get_price_decimals()));
  			if($specialPrice!='' && !is_null($specialPrice) && $specialPrice>=0){
                     		update_post_meta($post_id, '_sale_price', wc_format_decimal($specialPrice, wc_get_price_decimals()));
+                            $finalPrice=$specialPrice;
 			} else {
                         	update_post_meta($post_id, '_sale_price', '');    
                     	}
@@ -2726,6 +2727,7 @@ class Duellintegration {
                                 update_post_meta($post_id, '_regular_price', wc_format_decimal($finalPrice, wc_get_price_decimals()));
                                 if($specialPrice!='' && !is_null($specialPrice) && $specialPrice>=0){
                                     update_post_meta($post_id, '_sale_price', wc_format_decimal($specialPrice, wc_get_price_decimals()));
+                                    $finalPrice=$specialPrice;
                                 } else {
                                     update_post_meta($post_id, '_sale_price', '');    
                                 }
