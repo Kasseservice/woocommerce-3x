@@ -1983,10 +1983,13 @@ class Duellintegration {
                         $currentStock = get_post_meta($post_id, '_stock', true);
                         write_log('processStockUpdation() Before updating stock - Product Id: ' . $post_id . ' Current Status: ' . $stockStatus . ' Current Qty: ' . $currentStock . ' New Qty: ' . $stock, true);
                         $stockStatusMsg = 'onbackorder';
-                        if ($stock > 0) {
+                        if ($stock == 0) {
+                            $stockStatusMsg = 'outofstock';
+                        }
+                        elseif ($stock > 0) {
                             $stockStatusMsg = 'instock';
                         }
-                        //update_post_meta($post_id, '_stock_status', $stockStatusMsg);
+                        update_post_meta($post_id, '_stock_status', $stockStatusMsg);
                         update_post_meta($post_id, '_stock', $stock);
                     }
                 }
