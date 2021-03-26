@@ -1161,7 +1161,13 @@ class Duellintegration {
                 $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
                 $woocommerce_calc_taxes = get_option('woocommerce_calc_taxes');
                 if (!empty($fetchNonSyncedOrders)) {
-                    foreach ($fetchNonSyncedOrders as $postId) {
+                    
+                    
+                 $orderChunks = array_chunk($fetchNonSyncedOrders, 5);
+
+            foreach ($orderChunks as $oKey => $oItem) {
+                    
+                    foreach ($oItem as $key => $postId) {
                         $orderDetails = getWooCommerceOrderDetailById($postId['ID']);
 
                         //write_log($orderDetails);
@@ -1344,6 +1350,10 @@ class Duellintegration {
                         unset($orderData);
                         unset($orderProductData);
                     }
+                    
+            } 
+                    
+                    
                     /* write_log($notSyncCategoryData);
                       write_log($notSyncCategoryOrderData);
                       write_log($notSyncCategoryProductData);
@@ -1756,6 +1766,8 @@ class Duellintegration {
                     } catch (\Exception $ex) {
                         write_log("orderSyncException(getOrders): " . json_encode($ex), true);
                     }
+                    
+                    sleep(2);
                 }
             } else {
                 $text_error = 'Integration status is not active.';
