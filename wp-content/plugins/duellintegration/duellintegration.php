@@ -1148,7 +1148,17 @@ class Duellintegration {
                 $sql .= " GROUP BY " . $wpdb->prefix . "posts.ID ORDER BY " . $wpdb->prefix . "posts.ID ASC";
 
                 $fetchNonSyncedOrders = $wpdb->get_results($sql, ARRAY_A);
-                $prepareOrderData = array();
+                
+                $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
+                $woocommerce_calc_taxes = get_option('woocommerce_calc_taxes');
+                if (!empty($fetchNonSyncedOrders)) {
+                    
+                    
+                 $orderChunks = array_chunk($fetchNonSyncedOrders, 5);
+
+            foreach ($orderChunks as $oKey => $oItem) {
+                
+                    $prepareOrderData = array();
                 $notSyncCategoryData = array();
                 $notSyncCategoryOrderData = array();
                 $notSyncCategoryProductData = array();
@@ -1158,15 +1168,8 @@ class Duellintegration {
                 $notSyncCustomerOrderData = array();
 
                 $excludeOrders = array();
-                $woocommerce_prices_include_tax = get_option('woocommerce_prices_include_tax'); //=yes (inc tax) or no (excl. tax)
-                $woocommerce_calc_taxes = get_option('woocommerce_calc_taxes');
-                if (!empty($fetchNonSyncedOrders)) {
-                    
-                    
-                 $orderChunks = array_chunk($fetchNonSyncedOrders, 5);
-
-            foreach ($orderChunks as $oKey => $oItem) {
-                    
+                
+                
                     foreach ($oItem as $key => $postId) {
                         $orderDetails = getWooCommerceOrderDetailById($postId['ID']);
 
@@ -1351,7 +1354,7 @@ class Duellintegration {
                         unset($orderProductData);
                     }
                     
-            } 
+            
                     
                     
                     /* write_log($notSyncCategoryData);
@@ -1768,6 +1771,8 @@ class Duellintegration {
                     }
                     
                     sleep(2);
+                    
+                }
                 }
             } else {
                 $text_error = 'Integration status is not active.';
