@@ -1455,6 +1455,18 @@ class Duellintegration {
                                     }
                                     if ($duellCustomerId > 0) {
                                         $newCustomersDuellId[$custEmail] = $duellCustomerId;
+
+                                        // update customer data to duell.
+                                        $customerSaveData = array(
+                                            'customer_id' => $duellCustomerId,
+                                            'customer_name' => $customerRowData['customer_name'],
+                                            'phone' => strlen($customerRowData['phone']) >= 8 ? $customerRowData['phone'] : 99999999,
+                                            'email' => $customerRowData['email'],
+                                            'primary_address' => $customerRowData['primary_address'],
+                                            'primary_zip' => $customerRowData['primary_zip'],
+                                            'city' => $customerRowData['city']
+                                        );
+                                        $wsdata = callDuell('customer', 'put', $customerSaveData, 'json', $type);
                                     }
                                 }
                                 if (!empty($newCustomersDuellId)) {
