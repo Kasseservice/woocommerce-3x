@@ -1223,7 +1223,7 @@ class Duellintegration {
 
                                 $customerKey = '';
 
-                                $customerPhone = str_replace(array(' ', '+47', '+', '#', '*'), '', $orderBillingInfo['phone']);
+                                $customerPhone = str_replace(array(' ','0047','+0047', '+47', '+', '#', '*'), '', $orderBillingInfo['phone']);
 
                                 if ($customerPhone != '' && strlen($customerPhone) >= 8) {
                                     $customerKey = $customerPhone;
