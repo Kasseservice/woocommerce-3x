@@ -687,6 +687,21 @@ class Duellintegration {
                 'validation' => false
             ),
             array(
+                'uid' => 'duellintegration_allow_to_update_product_image_in_wp',
+                'label' => __('Save image from Duell', 'duellintegration'),
+                'section' => 'duell_product_configuration_section',
+                'type' => 'select',
+                'options' => array(
+                    '1' => 'Yes',
+                    '0' => 'No'
+                ),
+                'default' => 0,
+                'class' => "",
+                'helper' => '',
+                'supplimental' => __('If enable, Plugin fetch product image from Duell and save on path /wp-content/uploads/duell/products in Woocommerce', 'duellintegration'),
+                'validation' => false
+            ),
+            array(
                 'uid' => 'duellintegration_allow_stock_deduction_to_duell',
                 'label' => __('Enable Stock Deduction', 'duellintegration'),
                 'section' => 'duell_order_configuration_section',
@@ -2416,6 +2431,8 @@ class Duellintegration {
 
         $duellCreateNewCategory = get_option('duellintegration_create_new_category_in_wp');
         $duellCreateNewProduct = get_option('duellintegration_create_new_product_in_wp');
+        
+        $duellSaveProductImage=get_option('duellintegration_allow_to_update_product_image_in_wp');
 
 
         if (!empty($data)) {
@@ -2766,11 +2783,11 @@ class Duellintegration {
 
                                 //update_post_meta($post_id, '_sale_price', $specialPrice);
                                 //==save image code
-                                if ($productImage != '') {
-                                    write_log('Procced data: Have image product ' . $productNumber, true);
+                                if ($productImage != '' && ($duellSaveProductImage=='1' || $duellSaveProductImage==1) ) {
+                                    write_log('Procced data: Have image product ' . $productNumber.' '.$productImage, true);
 
 
-                                    $dirpath = WP_CONTENT_DIR . '/uploads/' . date('Y') . '/' . date('m') . '/';
+                                    $dirpath = WP_CONTENT_DIR . '/uploads/duell/products/';
 
                                     if (!file_exists($dirpath)) {
                                         mkdir($dirpath, 0755, true);
@@ -2778,12 +2795,16 @@ class Duellintegration {
 
                                     $imageName = basename($productImage);
 
-
-                                    $productImageContents = file_get_contents($productImage);
-                                    $productImageSavefile = fopen($dirpath . $imageName, 'w');
-                                    fwrite($productImageSavefile, $productImageContents);
-                                    fclose($productImageSavefile);
-
+                                    
+//                                    $productImageContents = file_get_contents($productImage);
+//                                    $productImageSavefile = fopen($dirpath . $imageName, 'w');
+//                                    fwrite($productImageSavefile, $productImageContents);
+//                                    fclose($productImageSavefile);
+                                    
+                                    
+                                    $productImageContents = file_get_contents_curl($productImage);
+                                   if(file_put_contents($dirpath . $imageName, $productImageContents)){
+                                   
                                     if (file_exists($dirpath . $imageName)) {
 
                                         write_log('Procced data: Image exists product ' . $productNumber, true);
@@ -2802,6 +2823,14 @@ class Duellintegration {
 
                                         write_log('Procced data: Attach id exists product ' . $barcode . ' ' . $attach_id, true);
                                         if ($attach_id > 0) {
+                                            
+                                             if (has_post_thumbnail( $post_id) ){
+                                                 $postAttachedImageId=get_post_thumbnail_id($post_id);
+                                                 write_log('Procced data: have image set ' . $barcode .'  Image attach id'.$postAttachedImageId, true);
+                                                delete_post_thumbnail($post_id);
+                                                wp_delete_attachment( $postAttachedImageId ,true);
+                                            }
+                                            
                                             $imagenew = get_post($attach_id);
                                             $fullsizepath = get_attached_file($imagenew->ID);
                                             $attach_data = wp_generate_attachment_metadata($attach_id, $fullsizepath);
@@ -2809,9 +2838,18 @@ class Duellintegration {
 
                                             set_post_thumbnail($post_id, $attach_id);
                                             update_post_meta($post_id, '_product_image_gallery', $attach_id);
+                                                                                        
                                         }
                                         //unlink($dirpath . $imageName);
+                                    } else {
+                                        write_log('Procced data: Image not exists product ' . $productNumber, true);
                                     }
+                                } else {
+                                     write_log('Procced data: Image not saved product ' . $productNumber, true);
+                                }
+                                    
+                                   
+                                    
                                 }
                                 //==end image code
                             }
