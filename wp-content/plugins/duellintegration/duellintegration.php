@@ -2794,6 +2794,16 @@ class Duellintegration {
                                     }
 
                                     $imageName = basename($productImage);
+                                    
+                                    $attachedImageName='';
+                                    if (has_post_thumbnail( $post_id) ){
+                                                 $postAttachedImageId=get_post_thumbnail_id($post_id);
+                                                  $image_Url = wp_get_attachment_url( $postAttachedImageId);
+                                                  $attachedImageName= basename($image_Url);
+                                                 
+                                                 write_log('Procced data: have image set ' . $barcode .'  Image attach id'.$postAttachedImageId.'  :::  '.$attachedImageName, true);
+                                               
+                                            }
 
                                     
 //                                    $productImageContents = file_get_contents($productImage);
@@ -2801,7 +2811,7 @@ class Duellintegration {
 //                                    fwrite($productImageSavefile, $productImageContents);
 //                                    fclose($productImageSavefile);
                                     
-                                    
+                                    if($attachedImageName!=$imageName){
                                     $productImageContents = file_get_contents_curl($productImage);
                                    if(file_put_contents($dirpath . $imageName, $productImageContents)){
                                    
@@ -2846,8 +2856,11 @@ class Duellintegration {
                                     }
                                 } else {
                                      write_log('Procced data: Image not saved product ' . $productNumber, true);
-                                }
+                                    }
                                     
+                                } else {
+                                    write_log('Procced data: Product have same image ' . $productNumber, true); 
+                                }
                                    
                                     
                                 }
